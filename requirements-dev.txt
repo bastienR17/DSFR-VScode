@@ -1,0 +1,9 @@
+# Dépendances Python des tests de parité avec le site (test/compare.py, test/doc_check.py)
+markdown
+pymdown-extensions
+beautifulsoup4
+dsfr_structure==0.12.0
+# Vérification des en-têtes corrigés avec le lecteur de métadonnées de MkDocs (test/frontmatter_mkdocs.py)
+mkdocs
+# Test navigateur du script de l'aperçu (test/preview_browser.py)
+playwright

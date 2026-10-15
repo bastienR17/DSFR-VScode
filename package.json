@@ -1,0 +1,207 @@
+{
+  "name": "dsfr-markdown-preview",
+  "displayName": "Aperçu DSFR pour Markdown (MkDocs DSFR)",
+  "description": "Affiche dans l'aperçu Markdown de VS Code le rendu DSFR des pages MkDocs DSFR : blocs dsfr_structure (alertes, accordéons, cartes, tuiles, onglets…) et composants de l'en-tête (bandeau, fil d'Ariane, sommaire).",
+  "version": "0.8.0",
+  "publisher": "dsnumrh4",
+  "author": {
+    "name": "Les contributeurs de dsfr-markdown-preview"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bastienR17/dsfr-markdown-preview.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bastienR17/dsfr-markdown-preview/issues"
+  },
+  "homepage": "https://github.com/bastienR17/dsfr-markdown-preview#readme",
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Other"
+  ],
+  "keywords": [
+    "dsfr",
+    "mkdocs",
+    "mkdocs-dsfr",
+    "dsfr_structure",
+    "markdown",
+    "aperçu",
+    "système de design de l'État"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onLanguage:markdown"
+  ],
+  "contributes": {
+    "markdown.markdownItPlugins": true,
+    "markdown.previewStyles": [
+      "./media/dsfr/dsfr.min.css",
+      "./media/dsfr/utility/utility.min.css",
+      "./media/dsfr/css/theme.css",
+      "./media/dsfr-preview.css"
+    ],
+    "markdown.previewScripts": [
+      "./media/dsfr-preview.js"
+    ],
+    "snippets": [
+      {
+        "language": "markdown",
+        "path": "./snippets/dsfr.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "dsfrPreview.open",
+        "title": "Ouvrir l'aperçu DSFR",
+        "category": "DSFR",
+        "icon": "$(preview)"
+      },
+      {
+        "command": "dsfrPreview.openToSide",
+        "title": "Ouvrir l'aperçu DSFR à côté",
+        "category": "DSFR",
+        "icon": "$(split-horizontal)"
+      },
+      {
+        "command": "dsfrPreview.openInNewWindow",
+        "title": "Ouvrir l'aperçu DSFR dans une nouvelle fenêtre",
+        "category": "DSFR",
+        "icon": "$(multiple-windows)"
+      },
+      {
+        "command": "dsfrPreview.fixFrontMatterInWorkspace",
+        "title": "Corriger les en-têtes YAML des fichiers Markdown",
+        "category": "DSFR"
+      },
+      {
+        "command": "dsfrPreview.toggle",
+        "title": "Activer / désactiver l'aperçu DSFR",
+        "category": "DSFR"
+      }
+    ],
+    "configuration": {
+      "title": "Aperçu DSFR",
+      "properties": {
+        "dsfrPreview.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Appliquer le rendu DSFR dans l'aperçu de tous les fichiers Markdown."
+        },
+        "dsfrPreview.theme": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "light",
+            "dark"
+          ],
+          "enumDescriptions": [
+            "Suit le thème clair ou sombre de VS Code.",
+            "Toujours en thème clair (comme le site par défaut).",
+            "Toujours en thème sombre."
+          ],
+          "default": "auto",
+          "description": "Thème DSFR utilisé dans l'aperçu."
+        },
+        "dsfrPreview.showErrors": {
+          "type": "boolean",
+          "default": true,
+          "description": "Signaler les erreurs d'écriture : encadrés dans l'aperçu (bloc DSFR invalide, bloc non fermé, pictogramme introuvable…) et soulignement des en-têtes YAML illisibles dans l'éditeur."
+        },
+        "dsfrPreview.mkdocsCompat": {
+          "type": "boolean",
+          "default": true,
+          "description": "Reproduire les règles Markdown du site MkDocs (Python-Markdown) : pas de liste juste après un paragraphe sans ligne vide, « \\ » en fin de ligne affiché tel quel, et signalement des contenus de liste indentés de moins de 4 espaces."
+        },
+        "dsfrPreview.openMode": {
+          "type": "string",
+          "enum": [
+            "side",
+            "window"
+          ],
+          "enumDescriptions": [
+            "L'écran est partagé : le Markdown à gauche, l'aperçu à droite.",
+            "L'aperçu s'ouvre dans une fenêtre séparée (VS Code 1.85 minimum)."
+          ],
+          "default": "side",
+          "description": "Où le bouton « Ouvrir l'aperçu DSFR » et le raccourci Ctrl+Alt+D ouvrent l'aperçu. Les deux possibilités restent disponibles par clic droit et dans la palette de commandes."
+        }
+      }
+    },
+    "menus": {
+      "editor/title": [
+        {
+          "command": "dsfrPreview.open",
+          "when": "editorLangId == markdown && !notebookEditorFocused",
+          "group": "navigation@-10"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "dsfrPreview.openToSide",
+          "when": "resourceLangId == markdown",
+          "group": "navigation@1"
+        },
+        {
+          "command": "dsfrPreview.openInNewWindow",
+          "when": "resourceLangId == markdown",
+          "group": "navigation@2"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "dsfrPreview.openToSide",
+          "when": "resourceLangId == markdown",
+          "group": "1_open@1"
+        },
+        {
+          "command": "dsfrPreview.openInNewWindow",
+          "when": "resourceLangId == markdown",
+          "group": "1_open@2"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "dsfrPreview.open",
+          "when": "editorLangId == markdown"
+        },
+        {
+          "command": "dsfrPreview.openToSide",
+          "when": "editorLangId == markdown"
+        },
+        {
+          "command": "dsfrPreview.openInNewWindow",
+          "when": "editorLangId == markdown"
+        },
+        {
+          "command": "dsfrPreview.fixFrontMatterInWorkspace",
+          "when": "workspaceFolderCount > 0"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "dsfrPreview.open",
+        "key": "ctrl+alt+d",
+        "mac": "cmd+shift+alt+d",
+        "when": "editorLangId == markdown"
+      }
+    ]
+  },
+  "scripts": {
+    "test": "npm run test:js && npm run test:python",
+    "test:js": "node test/errors.js && node test/snippets.js && node test/frontmatter.js && node test/frontmatter-fix.js && node test/samples.js && node test/extension-host.js",
+    "test:python": "cd test && python3 compare.py && python3 doc_check.py && python3 frontmatter_mkdocs.py",
+    "test:browser": "cd test && python3 preview_browser.py",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^4.0.0",
+    "markdown-it": "^14.1.0"
+  }
+}

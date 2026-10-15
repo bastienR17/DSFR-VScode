@@ -1,0 +1,329 @@
+{
+  "En-tête de page DSFR": {
+    "prefix": [
+      "dsfr-entete",
+      "dsfr-front-matter"
+    ],
+    "description": "En-tête de page (à mettre tout en haut du fichier) : fil d'Ariane et sommaire",
+    "body": [
+      "---",
+      "breadcrumb:",
+      "  - Accueil: /",
+      "  - ${1:Rubrique}: ${2:/rubrique/}",
+      "  - ${3:Titre de la page}",
+      "summary: ${4|true,false|}",
+      "---",
+      "",
+      "# ${3:Titre de la page}",
+      "",
+      "$0"
+    ]
+  },
+  "Bandeau d'information (en-tête)": {
+    "prefix": [
+      "dsfr-bandeau",
+      "dsfr-notice"
+    ],
+    "description": "Bandeau d'information importante : clés à placer dans l'en-tête --- de la page",
+    "body": [
+      "notice:",
+      "  type: ${1|info,warning,alert|}",
+      "  description: \"${2:Texte du bandeau}\"",
+      "  link_label: ${3:En savoir plus}",
+      "  link_url: ${4:https://}",
+      "$0"
+    ]
+  },
+  "Fil d'Ariane (en-tête)": {
+    "prefix": [
+      "dsfr-fil-ariane",
+      "dsfr-breadcrumb"
+    ],
+    "description": "Fil d'Ariane : clés à placer dans l'en-tête --- de la page",
+    "body": [
+      "breadcrumb:",
+      "  - Accueil: /",
+      "  - ${1:Rubrique}: ${2:/rubrique/}",
+      "  - ${3:Titre de la page}",
+      "$0"
+    ]
+  },
+  "Sommaire (en-tête)": {
+    "prefix": [
+      "dsfr-sommaire",
+      "dsfr-summary"
+    ],
+    "description": "Sommaire des titres de niveau 2 et 3 : clé à placer dans l'en-tête --- de la page",
+    "body": [
+      "summary: true",
+      "$0"
+    ]
+  },
+  "Lettre d'information (en-tête)": {
+    "prefix": [
+      "dsfr-lettre-info",
+      "dsfr-newsletter"
+    ],
+    "description": "Lettre d'information et réseaux sociaux : clés à placer dans l'en-tête --- de la page",
+    "body": [
+      "newsletter:",
+      "  title: ${1:Abonnez-vous à la lettre d'information}",
+      "  description: ${2:Description}",
+      "  button: ${3:S'abonner}",
+      "  button_url: ${4:https://}",
+      "$0"
+    ]
+  },
+  "Alerte DSFR": {
+    "prefix": [
+      "dsfr-alerte",
+      "dsfr-alert"
+    ],
+    "description": "Alerte DSFR avec titre (info, succès, attention, erreur)",
+    "body": [
+      "/// alert | ${1:Titre de l'alerte}",
+      "    type: ${2|info,success,warning,error|}",
+      "${3:Texte de l'alerte}",
+      "///",
+      "$0"
+    ]
+  },
+  "Alerte DSFR sans titre": {
+    "prefix": [
+      "dsfr-alerte-simple"
+    ],
+    "description": "Petite alerte DSFR sans titre",
+    "body": [
+      "/// alert",
+      "    type: ${1|info,success,warning,error|}",
+      "${2:Texte de l'alerte}",
+      "///",
+      "$0"
+    ]
+  },
+  "Accordéon DSFR": {
+    "prefix": [
+      "dsfr-accordeon",
+      "dsfr-accordion"
+    ],
+    "description": "Accordéon DSFR (contenu repliable)",
+    "body": [
+      "/// accordion | ${1:Intitulé de l'accordéon}",
+      "    open: ${2|false,true|}",
+      "${3:Contenu}",
+      "///",
+      "$0"
+    ]
+  },
+  "Badge DSFR": {
+    "prefix": [
+      "dsfr-badge"
+    ],
+    "description": "Badge DSFR",
+    "body": [
+      "/// badge",
+      "    type: ${1|info,success,warning,error,new|}",
+      "${2:Libellé}",
+      "///",
+      "$0"
+    ]
+  },
+  "Badge DSFR coloré": {
+    "prefix": [
+      "dsfr-badge-couleur"
+    ],
+    "description": "Badge DSFR de couleur illustrative",
+    "body": [
+      "/// badge",
+      "    color: ${1|green-menthe,green-emeraude,blue-ecume,purple-glycine,pink-tuile,yellow-tournesol,orange-terre-battue,brown-caramel,beige-gris-galet|}",
+      "${2:Libellé}",
+      "///",
+      "$0"
+    ]
+  },
+  "Mise en avant DSFR": {
+    "prefix": [
+      "dsfr-mise-en-avant",
+      "dsfr-callout"
+    ],
+    "description": "Mise en avant DSFR (callout) avec bouton facultatif",
+    "body": [
+      "/// callout | ${1:Titre de la mise en avant}",
+      "    icon: ${2:information-line}",
+      "    link_label: ${3:En savoir plus}",
+      "    link_url: ${4:https://}",
+      "${5:Texte de la mise en avant}",
+      "///",
+      "$0"
+    ]
+  },
+  "Citation DSFR": {
+    "prefix": [
+      "dsfr-citation",
+      "dsfr-quote"
+    ],
+    "description": "Citation DSFR avec auteur",
+    "body": [
+      "/// quote | ${1:Auteur}",
+      "    size: ${2|md,lg,xl|}",
+      "« ${3:Texte de la citation} »",
+      "///",
+      "$0"
+    ]
+  },
+  "Mise en exergue DSFR": {
+    "prefix": [
+      "dsfr-exergue",
+      "dsfr-highlight"
+    ],
+    "description": "Mise en exergue DSFR (citation Markdown « > »)",
+    "body": [
+      "> ${1:Texte mis en exergue}",
+      "$0"
+    ]
+  },
+  "Carte DSFR": {
+    "prefix": [
+      "dsfr-carte",
+      "dsfr-card"
+    ],
+    "description": "Carte DSFR avec lien",
+    "body": [
+      "/// card | ${1:Titre de la carte}",
+      "    description: ${2:Description}",
+      "    target: ${3:page.md}",
+      "    badge: ${4:Nouveau | green-menthe}",
+      "${5:Détail}",
+      "///",
+      "$0"
+    ]
+  },
+  "Tuile DSFR": {
+    "prefix": [
+      "dsfr-tuile",
+      "dsfr-tile"
+    ],
+    "description": "Tuile DSFR avec pictogramme",
+    "body": [
+      "/// tile | ${1:Titre de la tuile}",
+      "    description: ${2:Description}",
+      "    target: ${3:page.md}",
+      "    picto: ${4|document/document,buildings/city-hall,digital/mail-send,system/information,institutions/money|}",
+      "///",
+      "$0"
+    ]
+  },
+  "Grille DSFR 2 colonnes": {
+    "prefix": [
+      "dsfr-grille",
+      "dsfr-row"
+    ],
+    "description": "Grille DSFR : une ligne et deux colonnes",
+    "body": [
+      "/// row | fr-grid-row--gutters",
+      "/// col | 12 md-6",
+      "${1:Colonne 1}",
+      "///",
+      "/// col | 12 md-6",
+      "${2:Colonne 2}",
+      "///",
+      "///",
+      "$0"
+    ]
+  },
+  "Onglets DSFR": {
+    "prefix": [
+      "dsfr-onglets",
+      "dsfr-tabs"
+    ],
+    "description": "Système d'onglets DSFR (2 onglets)",
+    "body": [
+      "/// tabs",
+      "/// tab | ${1:Onglet 1}",
+      "${2:Contenu du premier onglet}",
+      "///",
+      "/// tab | ${3:Onglet 2}",
+      "${4:Contenu du deuxième onglet}",
+      "///",
+      "///",
+      "$0"
+    ]
+  },
+  "Groupe de boutons DSFR": {
+    "prefix": [
+      "dsfr-boutons",
+      "dsfr-buttons"
+    ],
+    "description": "Groupe de boutons DSFR",
+    "body": [
+      "/// buttons",
+      "    inline: ${1|inline,vertical|}",
+      "/// button | ${2:Bouton principal}",
+      "    target: ${3:https://}",
+      "///",
+      "/// button | ${4:Bouton secondaire}",
+      "    kind: secondary",
+      "    target: ${5:https://}",
+      "///",
+      "///",
+      "$0"
+    ]
+  },
+  "Bouton DSFR": {
+    "prefix": [
+      "dsfr-bouton",
+      "dsfr-button"
+    ],
+    "description": "Bouton DSFR seul",
+    "body": [
+      "/// button | ${1:Libellé}",
+      "    kind: ${2|secondary,tertiary,tertiary-no-outline|}",
+      "    target: ${3:https://}",
+      "///",
+      "$0"
+    ]
+  },
+  "Image DSFR avec légende": {
+    "prefix": [
+      "dsfr-image",
+      "dsfr-media-image"
+    ],
+    "description": "Contenu média DSFR : image avec légende",
+    "body": [
+      "/// media | ${1:Légende de l'image}",
+      "    type: image",
+      "    url: ${2:../images/capture.png}",
+      "    ratio: ${3|16x9,4x3,1x1,3x2|}",
+      "///",
+      "$0"
+    ]
+  },
+  "Vidéo DSFR": {
+    "prefix": [
+      "dsfr-video",
+      "dsfr-media-video"
+    ],
+    "description": "Contenu média DSFR : vidéo",
+    "body": [
+      "/// media | ${1:Légende de la vidéo}",
+      "    type: video",
+      "    url: ${2:video.mp4}",
+      "///",
+      "$0"
+    ]
+  },
+  "Tableau DSFR avec légende": {
+    "prefix": [
+      "dsfr-tableau",
+      "dsfr-table"
+    ],
+    "description": "Tableau DSFR avec légende [entre crochets] en dernière ligne",
+    "body": [
+      "| ${1:Colonne 1} | ${2:Colonne 2} |",
+      "|---|---|",
+      "| ${3:Valeur} | ${4:Valeur} |",
+      "[${5:Légende du tableau}]",
+      "$0"
+    ]
+  }
+}

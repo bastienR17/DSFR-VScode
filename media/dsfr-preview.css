@@ -1,0 +1,108 @@
+/*
+ * Ajustements pour que l'aperçu Markdown de VS Code ressemble au site MkDocs DSFR,
+ * et styles des encadrés d'erreur propres à l'aperçu.
+ * Comme les feuilles DSFR, ce fichier est désactivé par media/dsfr-preview.js
+ * quand le rendu DSFR est coupé.
+ */
+
+/* VS Code impose 14 px à la racine : le DSFR raisonne en rem sur une base de 16 px */
+html[data-fr-theme],
+html[data-fr-theme] body.dsfr-preview {
+  font-size: 16px;
+}
+
+html[data-fr-theme] {
+  background-color: var(--background-default-grey);
+}
+
+body.dsfr-preview {
+  font-family: Marianne, arial, sans-serif;
+  line-height: 1.5rem;
+  color: var(--text-default-grey);
+  background-color: var(--background-default-grey);
+  padding: 1.5rem 2rem 3rem;
+}
+
+/* Titres : on retire le soulignement ajouté par VS Code */
+body.dsfr-preview h1,
+body.dsfr-preview h2 {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+/* Code en ligne */
+body.dsfr-preview :not(pre) > code {
+  color: var(--text-default-grey);
+  background-color: var(--background-contrast-grey);
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
+}
+
+/* Blocs de code : theme.css du site est prévu pour un fond clair */
+html[data-fr-theme='dark'] body.dsfr-preview pre {
+  background: var(--background-contrast-grey);
+  color: var(--text-default-grey);
+  text-shadow: none;
+}
+
+/* Tableaux DSFR : on neutralise les bordures ajoutées par VS Code */
+body.dsfr-preview .fr-table th,
+body.dsfr-preview .fr-table td {
+  border-top: 0;
+  border-bottom: 0;
+}
+
+/* Boîtes d'erreur propres à l'aperçu (absentes du site) */
+.dsfr-preview-error {
+  margin: 0 0 1.5rem;
+  padding: 0.75rem 1rem;
+  border-left: 4px solid #ce0500;
+  background-color: rgba(206, 5, 0, 0.07);
+  font-family: Marianne, arial, sans-serif;
+}
+
+.dsfr-preview-error--warning {
+  border-left-color: #b34000;
+  background-color: rgba(179, 64, 0, 0.07);
+}
+
+.dsfr-preview-error__label {
+  margin: 0 0 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #ce0500;
+}
+
+.dsfr-preview-error--warning .dsfr-preview-error__label {
+  color: #b34000;
+}
+
+html[data-fr-theme='dark'] .dsfr-preview-error__label {
+  color: #ff5655;
+}
+
+html[data-fr-theme='dark'] .dsfr-preview-error--warning .dsfr-preview-error__label {
+  color: #fc5d00;
+}
+
+.dsfr-preview-error__code {
+  margin: 0 0 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed currentColor;
+  background: transparent;
+  color: inherit;
+  text-shadow: none;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+}
+
+.dsfr-preview-error__msg {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* Sommaire déclaré dans l'en-tête : espace avant le contenu, comme sur le site */
+body.dsfr-preview .fr-summary {
+  margin-bottom: 2rem;
+}
