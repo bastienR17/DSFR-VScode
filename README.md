@@ -9,8 +9,6 @@ Extension VS Code qui affiche, dans l'aperçu Markdown, **le rendu exact d'une p
 alertes, accordéons, cartes, tuiles, onglets, bandeau, fil d'Ariane… avec les styles, polices et icônes
 du [Système de Design de l'État](https://www.systeme-de-design.gouv.fr/).
 
-Plus besoin de lancer `mkdocs serve` pour vérifier une page : on écrit, on voit le résultat, et
-l'aperçu signale les blocs qui s'afficheraient mal sur le site.
 
 | Thème clair | Thème sombre |
 |---|---|
