@@ -1,0 +1,68 @@
+# Tests à chaque push et pull request ; paquet .vsix en artefact.
+# Pour publier une version : pousser une étiquette « v0.6.0 » (par exemple) :
+# le .vsix est alors joint à une Release GitHub créée automatiquement.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Installer les dépendances
+        run: |
+          npm ci
+          pip install -r requirements-dev.txt
+          python -m playwright install --with-deps chromium
+
+      - name: Tests de l'extension (Node)
+        run: npm run test:js
+
+      - name: Parité avec le site (dsfr_structure)
+        run: npm run test:python
+
+      - name: Script de l'aperçu (navigateur)
+        run: npm run test:browser
+
+      - name: Construire le .vsix
+        run: npm run package
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vsix
+          path: '*.vsix'
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: vsix
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: '*.vsix'
+          generate_release_notes: true

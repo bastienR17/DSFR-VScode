@@ -2,6 +2,13 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## 0.8.1 — octobre 2026
+
+### Corrections
+- Dépôt : fichiers de configuration rétablis (intégration continue `.github/`, `.gitignore`,
+  `.vscodeignore`, `.vscode/`, `.editorconfig`), fichier système `.DS_Store` retiré.
+- Adresse du dépôt corrigée dans `package.json` et le README (`bastienR17/DSFR-VScode`).
+
 ## 0.8.0 — octobre 2026
 
 ### Ajouts

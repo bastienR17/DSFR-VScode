@@ -1,6 +1,6 @@
 # Aperçu DSFR pour Markdown
 
-[![CI](https://github.com/bastienR17/dsfr-markdown-preview/actions/workflows/ci.yml/badge.svg)](https://github.com/bastienR17/dsfr-markdown-preview/actions/workflows/ci.yml)
+[![CI](https://github.com/bastienR17/DSFR-VScode/actions/workflows/ci.yml/badge.svg)](https://github.com/bastienR17/DSFR-VScode/actions/workflows/ci.yml)
 ![VS Code 1.75+](https://img.shields.io/badge/VS%20Code-1.75%2B-0066b8)
 ![Licence MIT](https://img.shields.io/badge/licence-MIT-green)
 
@@ -43,7 +43,7 @@ du [Système de Design de l'État](https://www.systeme-de-design.gouv.fr/).
 ## Installation
 
 1. Télécharger le fichier `.vsix` de la dernière version dans les
-   [Releases](https://github.com/bastienR17/dsfr-markdown-preview/releases).
+   [Releases](https://github.com/bastienR17/DSFR-VScode/releases).
 2. Dans VS Code : panneau **Extensions** → menu **⋯** → **Installer à partir d'un VSIX…**
    (ou en ligne de commande : `code --install-extension dsfr-markdown-preview-<version>.vsix`).
 3. Recharger la fenêtre : **Ctrl+Maj+P** → **Developer: Reload Window**.

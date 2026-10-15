@@ -2,7 +2,7 @@
   "name": "dsfr-markdown-preview",
   "displayName": "Aperçu DSFR pour Markdown (MkDocs DSFR)",
   "description": "Affiche dans l'aperçu Markdown de VS Code le rendu DSFR des pages MkDocs DSFR : blocs dsfr_structure (alertes, accordéons, cartes, tuiles, onglets…) et composants de l'en-tête (bandeau, fil d'Ariane, sommaire).",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "publisher": "dsnumrh4",
   "author": {
     "name": "Les contributeurs de dsfr-markdown-preview"
@@ -10,12 +10,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bastienR17/dsfr-markdown-preview.git"
+    "url": "https://github.com/bastienR17/DSFR-VScode.git"
   },
   "bugs": {
-    "url": "https://github.com/bastienR17/dsfr-markdown-preview/issues"
+    "url": "https://github.com/bastienR17/DSFR-VScode/issues"
   },
-  "homepage": "https://github.com/bastienR17/dsfr-markdown-preview#readme",
+  "homepage": "https://github.com/bastienR17/DSFR-VScode#readme",
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.75.0"

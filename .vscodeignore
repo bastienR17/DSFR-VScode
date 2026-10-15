@@ -1,0 +1,14 @@
+# Fichiers exclus du paquet .vsix (seul le nécessaire à l'exécution est livré)
+.github/**
+.vscode/**
+docs/**
+samples/**
+test/**
+node_modules/**
+**/*.map
+.editorconfig
+.gitignore
+package-lock.json
+requirements-dev.txt
+CONTRIBUTING.md
+scripts/**
