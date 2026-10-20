@@ -6,7 +6,8 @@
  * - aligne le thème DSFR (clair/sombre) sur celui de VS Code ;
  * - rend cliquables les accordéons, le fil d'Ariane, les onglets et le sommaire :
  *   le JavaScript officiel du DSFR n'est pas chargé, ce script en reproduit le minimum ;
- * - conserve l'état ouvert/fermé quand l'aperçu se rafraîchit pendant la saisie.
+ * - conserve l'état ouvert/fermé quand l'aperçu se rafraîchit pendant la saisie, page par page :
+ *   l'aperçu suit le fichier Markdown actif, et chaque page retrouve ses accordéons et ses onglets.
  *
  * Attention : VS Code charge ce script en « async » et insère le contenu de la page APRÈS
  * coup, puis le remplace à chaque modification du fichier. Le script surveille donc le
@@ -26,9 +27,60 @@
     '/media/dsfr-preview.css'
   ];
   var COLLAPSE_BTN = 'button[aria-controls]';
-  var openCollapses = new Set();
-  var selectedTabs = new Map();
-  var initialised = false;
+  var STORAGE_PREFIX = 'dsfr-preview:';
+
+  /* --- État par page -----------------------------------------------------
+   * L'aperçu de VS Code suit le fichier Markdown actif : quand on change de fichier, il recharge
+   * toute la page (et ce script). L'état des accordéons et des onglets est donc rangé par fichier
+   * dans sessionStorage, propre à l'onglet d'aperçu, pour le retrouver en revenant sur la page.
+   * Sans sessionStorage (navigation privée, test…), l'état reste en mémoire.
+   */
+  var pages = {};
+  var current = null;
+
+  // Adresse du fichier affiché, lue dans les données que VS Code place dans l'aperçu.
+  function pageKey() {
+    var meta = document.getElementById('vscode-markdown-preview-data');
+    if (!meta) return '';
+    try {
+      return JSON.parse(meta.getAttribute('data-settings') || '{}').source || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function loadPage(key) {
+    if (pages[key]) return pages[key];
+    var page = { key: key, open: new Set(), source: new Set(), tabs: new Map(), initialised: false };
+    try {
+      var saved = key && JSON.parse(window.sessionStorage.getItem(STORAGE_PREFIX + key) || 'null');
+      if (saved) {
+        page.open = new Set(saved.open || []);
+        page.source = new Set(saved.source || []);
+        page.tabs = new Map(saved.tabs || []);
+        page.initialised = true;
+      }
+    } catch (e) { /* stockage indisponible : état en mémoire seulement */ }
+    pages[key] = page;
+    return page;
+  }
+
+  function savePage(page) {
+    if (!page.key) return;
+    try {
+      window.sessionStorage.setItem(STORAGE_PREFIX + page.key, JSON.stringify({
+        open: Array.from(page.open),
+        source: Array.from(page.source),
+        tabs: Array.from(page.tabs),
+      }));
+    } catch (e) { /* stockage indisponible ou plein : sans conséquence */ }
+  }
+
+  function currentPage() {
+    var key = pageKey();
+    if (!current || current.key !== key) current = loadPage(key);
+    return current;
+  }
 
   function marker() {
     return document.getElementById('dsfr-preview-state');
@@ -126,19 +178,28 @@
   function sync() {
     var state = applyState();
     if (state !== true) return;
+    var page = currentPage();
+    var seen = new Set();
     var buttons = collapseButtons();
     for (var i = 0; i < buttons.length; i++) {
       var key = collapseKey(buttons[i], i);
-      // Au premier affichage, on mémorise ce qui est ouvert d'origine (ex. accordéon « open: true »)
-      if (!initialised && buttons[i].getAttribute('aria-expanded') === 'true') openCollapses.add(key);
-      setCollapse(buttons[i], openCollapses.has(key) || buttons[i].getAttribute('aria-expanded') === 'true');
+      var openInSource = buttons[i].getAttribute('aria-expanded') === 'true';
+      // Ce qui est ouvert d'origine (accordéon « open: true ») est ouvert au premier affichage,
+      // et de nouveau si l'option change dans le Markdown. Sinon, l'état choisi au clic l'emporte.
+      if (!page.initialised || openInSource !== page.source.has(key)) {
+        if (openInSource) page.open.add(key); else page.open.delete(key);
+      }
+      if (openInSource) seen.add(key);
+      setCollapse(buttons[i], page.open.has(key));
     }
     var groups = document.querySelectorAll('.fr-tabs');
     for (var g = 0; g < groups.length; g++) {
-      var wanted = selectedTabs.get(tabKey(groups[g]));
+      var wanted = page.tabs.get(tabKey(groups[g]));
       if (wanted !== undefined) selectTab(groups[g], wanted);
     }
-    initialised = true;
+    page.source = seen;
+    page.initialised = true;
+    savePage(page);
   }
 
   var scheduled = false;
@@ -172,11 +233,13 @@
     if (btn && collapseTarget(btn)) {
       event.preventDefault();
       event.stopPropagation();
+      var page = currentPage();
       var all = collapseButtons();
       var key = collapseKey(btn, all.indexOf(btn));
       var expanded = btn.getAttribute('aria-expanded') !== 'true';
-      if (expanded) openCollapses.add(key); else openCollapses.delete(key);
+      if (expanded) page.open.add(key); else page.open.delete(key);
       setCollapse(btn, expanded);
+      savePage(page);
       return;
     }
 
@@ -187,8 +250,10 @@
       var group = tab.closest('.fr-tabs');
       if (group) {
         var index = tabsOf(group).indexOf(tab);
-        selectedTabs.set(tabKey(group), index);
+        var page = currentPage();
+        page.tabs.set(tabKey(group), index);
         selectTab(group, index);
+        savePage(page);
       }
     }
   }, true);
@@ -201,8 +266,10 @@
     var group = tab.closest('.fr-tabs');
     var tabs = tabsOf(group);
     var i = (tabs.indexOf(tab) + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
-    selectedTabs.set(tabKey(group), i);
+    var page = currentPage();
+    page.tabs.set(tabKey(group), i);
     selectTab(group, i);
+    savePage(page);
     tabs[i].focus();
     event.preventDefault();
   });

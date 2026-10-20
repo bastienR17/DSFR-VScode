@@ -9,15 +9,26 @@
  *     l'aperçu par "markdown.previewStyles" et "markdown.previewScripts".
  *
  * Ce fichier ajoute les réglages, l'indicateur de la barre d'état, les commandes, et le
- * contrôle des en-têtes YAML dans l'éditeur (soulignement, ampoule de correction rapide).
+ * contrôle de la page dans l'éditeur : les problèmes affichés dans l'aperçu (blocs DSFR mal
+ * écrits, en-tête YAML illisible…) sont aussi soulignés dans le Markdown, avec une ampoule de
+ * correction rapide quand c'est possible. Seuls les fichiers ouverts sont analysés.
+ *
+ * Aperçu DSFR pour Markdown — créé par Bastien (bastienR17), licence MIT.
  */
 const vscode = require('vscode');
+const fs = require('fs');
 const path = require('path');
 const dsfrPlugin = require('./lib/dsfr-markdown-it');
 const { analyzeFrontMatter, fixFrontMatter, describeError } = require('./lib/frontmatter');
+const { createLinter } = require('./lib/lint');
+const assist = require('./lib/assist');
+const { checkLinks } = require('./lib/links');
+const mkdocsConfig = require('./lib/mkdocs-config');
 
 const SECTION = 'dsfrPreview';
 let statusItem = null;
+// Compteur des problèmes de la page ouverte (barre d'état) ; un clic les liste.
+let problemsItem = null;
 
 function config() {
   const c = vscode.workspace.getConfiguration(SECTION);
@@ -27,6 +38,7 @@ function config() {
     showErrors: c.get('showErrors', true),
     mkdocsCompat: c.get('mkdocsCompat', true),
     openMode: c.get('openMode', 'side'),
+    checkLinks: c.get('checkLinks', true),
   };
 }
 
@@ -137,65 +149,239 @@ function open(uri) {
 }
 
 /* ------------------------------------------------------------------ */
-/* En-têtes YAML : erreurs dans l'éditeur et correction               */
+/* Problèmes de la page : soulignements dans l'éditeur et corrections  */
 /* ------------------------------------------------------------------ */
 
 // Code des diagnostics qu'une correction rapide sait réparer (valeur contenant « : »).
 const FIX_CODE = 'dsfr-frontmatter-colon';
 const EXCLUDED_DIRS = '**/{node_modules,.git,site,venv,.venv}/**';
+// Délai après la dernière frappe avant de réanalyser la page (ms).
+const LINT_DELAY = 300;
 let diagnostics = null;
+const lintTimers = new Map();
+// Analyse des blocs DSFR : le même plugin que l'aperçu, avec un markdown-it privé (lib/lint.js).
+const lintBlocks = createLinter({ mkdocsCompat: () => config().mkdocsCompat });
 
-/**
- * Souligne l'en-tête YAML s'il est illisible (même analyse que l'aperçu). Les lignes que l'on
- * sait corriger sont soulignées une par une et proposent une correction rapide (ampoule).
- */
-function lintDocument(document) {
-  if (!diagnostics || document.languageId !== 'markdown') return;
-  const info = isEnabled() && config().showErrors ? analyzeFrontMatter(document.getText()) : null;
-  if (!info || !info.error) {
-    diagnostics.delete(document.uri);
-    return;
-  }
-  let list;
+const SEVERITY = () => ({ error: vscode.DiagnosticSeverity.Error, warning: vscode.DiagnosticSeverity.Warning });
+
+// Problème trouvé par lib/ (lint, links, mkdocs-config) → soulignement VS Code.
+const toDiagnostic = (issue) => {
+  const r = issue.range;
+  const d = new vscode.Diagnostic(new vscode.Range(r.line, r.start, r.line, r.end), issue.message, SEVERITY()[issue.severity]);
+  d.code = issue.code;
+  d.source = 'DSFR';
+  return d;
+};
+
+/** En-tête YAML illisible : les lignes que l'on sait corriger sont soulignées une par une. */
+function frontMatterDiagnostics(document, text) {
+  const info = analyzeFrontMatter(text);
+  if (!info || !info.error) return [];
   if (info.fixes.length) {
-    list = info.fixes.map((f) => {
+    return info.fixes.map((f) => {
       const d = new vscode.Diagnostic(document.lineAt(f.line).range, describeError(Object.assign({}, info, { fixes: [f] })), vscode.DiagnosticSeverity.Error);
       d.code = FIX_CODE;
       d.source = 'DSFR';
       return d;
     });
-  } else {
-    const d = new vscode.Diagnostic(document.lineAt(Math.min(info.errorLine, document.lineCount - 1)).range, describeError(info), vscode.DiagnosticSeverity.Error);
-    d.source = 'DSFR';
-    list = [d];
   }
-  diagnostics.set(document.uri, list);
+  const d = new vscode.Diagnostic(document.lineAt(Math.min(info.errorLine, document.lineCount - 1)).range, describeError(info), vscode.DiagnosticSeverity.Error);
+  d.source = 'DSFR';
+  return [d];
+}
+
+/** Blocs « /// », bandeau, fil d'Ariane, listes : les mêmes problèmes que dans l'aperçu. */
+function blockDiagnostics(text) {
+  return lintBlocks(text).map((issue) => toDiagnostic(issue));
+}
+
+/* --- mkdocs.yml du site (facultatif) : relu seulement s'il a changé ------------------- */
+const configCache = new Map(); // chemin → { mtime, config }
+function siteConfig(file, workspaceRoot) {
+  const configPath = mkdocsConfig.findConfig(path.dirname(file), workspaceRoot, (p) => fs.existsSync(p));
+  if (!configPath) return null;
+  try {
+    const mtime = fs.statSync(configPath).mtimeMs;
+    const cached = configCache.get(configPath);
+    if (cached && cached.mtime === mtime) return cached.config;
+    const config = mkdocsConfig.parseConfig(fs.readFileSync(configPath, 'utf8'), configPath);
+    configCache.set(configPath, { mtime, config });
+    return config;
+  } catch (e) {
+    return null;
+  }
+}
+
+const isInside = (file, dir) => {
+  const rel = path.relative(dir, file);
+  return !!rel && !rel.startsWith('..') && !path.isAbsolute(rel);
+};
+
+/**
+ * Liens et images de la page, et syntaxes non activées dans le mkdocs.yml (fichiers locaux seulement).
+ * Une autre page déjà ouverte est lue telle qu'affichée, même non enregistrée.
+ */
+function siteDiagnostics(document, text) {
+  if (document.uri.scheme !== 'file' || !config().checkLinks) return [];
+  const file = document.uri.fsPath;
+  const folder = vscode.workspace.getWorkspaceFolder(document.uri);
+  const site = siteConfig(file, folder ? folder.uri.fsPath : null);
+  const inSite = !!site && isInside(file, site.docsDir);
+  const read = (p) => {
+    const open = vscode.workspace.textDocuments.find((d) => d.uri.scheme === 'file' && d.uri.fsPath === p);
+    if (open) return open.getText();
+    try { return fs.readFileSync(p, 'utf8'); } catch (e) { return null; }
+  };
+  const issues = checkLinks(text, { file, docsDir: inSite ? site.docsDir : null, exists: (p) => fs.existsSync(p), read });
+  if (inSite) issues.push(...mkdocsConfig.checkExtensions(text, site));
+  return issues.map(toDiagnostic);
+}
+
+// Documents analysés : fichiers et brouillons, pas les copies ouvertes par Git (comparaisons) ou d'autres extensions.
+const LINTED_SCHEMES = new Set(['file', 'untitled', 'vscode-remote', 'vscode-vfs']);
+
+/** Analyse un document Markdown ouvert et met à jour ses soulignements. */
+function lintDocument(document) {
+  if (!diagnostics || document.languageId !== 'markdown' || !LINTED_SCHEMES.has(document.uri.scheme)) return;
+  if (!isEnabled() || !config().showErrors) {
+    diagnostics.delete(document.uri);
+    return;
+  }
+  const text = document.getText();
+  diagnostics.set(document.uri, frontMatterDiagnostics(document, text).concat(blockDiagnostics(text), siteDiagnostics(document, text)));
+}
+
+// Pendant la frappe, on attend une courte pause avant de réanalyser.
+function scheduleLint(document) {
+  if (document.languageId !== 'markdown') return;
+  const key = document.uri.toString();
+  clearTimeout(lintTimers.get(key));
+  lintTimers.set(key, setTimeout(() => {
+    lintTimers.delete(key);
+    lintDocument(document);
+  }, LINT_DELAY));
+}
+
+function forgetDocument(document) {
+  const key = document.uri.toString();
+  clearTimeout(lintTimers.get(key));
+  lintTimers.delete(key);
+  if (diagnostics) diagnostics.delete(document.uri);
 }
 
 function lintOpenDocuments() {
   for (const document of vscode.workspace.textDocuments) lintDocument(document);
 }
 
-/** Ampoule sur une ligne d'en-tête fautive : corriger ce fichier, ou tous les fichiers du dossier. */
+// Le diagnostic de `list` qui correspond à un problème (même code, même ligne).
+const diagnosticFor = (list, issue) => list.filter((d) => d.code === issue.code && d.range.start.line === issue.range.line);
+
+/**
+ * Ampoule : corrections rapides des problèmes situés dans la plage demandée.
+ *  - en-tête YAML illisible : mettre les valeurs entre guillemets (ce fichier ou tout le dossier) ;
+ *  - blocs DSFR : corrections proposées par lib/lint.js (valeur la plus proche, bloc à fermer…).
+ */
 const codeActionProvider = {
   provideCodeActions(document, range, context) {
+    const actions = [];
     const relevant = context.diagnostics.filter((d) => d.code === FIX_CODE);
-    if (!relevant.length) return [];
-    const fixed = fixFrontMatter(document.getText());
-    if (!fixed) return [];
+    const fixed = relevant.length ? fixFrontMatter(document.getText()) : null;
+    if (fixed) {
+      const fixThis = new vscode.CodeAction('Mettre entre guillemets les valeurs qui contiennent « : »', vscode.CodeActionKind.QuickFix);
+      fixThis.edit = new vscode.WorkspaceEdit();
+      for (const f of fixed.fixes) fixThis.edit.replace(document.uri, document.lineAt(f.line).range, f.after);
+      fixThis.diagnostics = relevant;
+      fixThis.isPreferred = true;
 
-    const fixThis = new vscode.CodeAction('Mettre entre guillemets les valeurs qui contiennent « : »', vscode.CodeActionKind.QuickFix);
-    fixThis.edit = new vscode.WorkspaceEdit();
-    for (const f of fixed.fixes) fixThis.edit.replace(document.uri, document.lineAt(f.line).range, f.after);
-    fixThis.diagnostics = relevant;
-    fixThis.isPreferred = true;
+      const fixAll = new vscode.CodeAction('Corriger les en-têtes YAML de tous les fichiers Markdown du dossier…', vscode.CodeActionKind.QuickFix);
+      fixAll.command = { command: 'dsfrPreview.fixFrontMatterInWorkspace', title: fixAll.title };
+      fixAll.diagnostics = relevant;
+      actions.push(fixThis, fixAll);
+    }
 
-    const fixAll = new vscode.CodeAction('Corriger les en-têtes YAML de tous les fichiers Markdown du dossier…', vscode.CodeActionKind.QuickFix);
-    fixAll.command = { command: 'dsfrPreview.fixFrontMatterInWorkspace', title: fixAll.title };
-    fixAll.diagnostics = relevant;
-    return [fixThis, fixAll];
+    // Problèmes de blocs : on réanalyse le texte affiché pour retrouver les corrections possibles.
+    // Rien n'est modifié sans un clic de l'utilisateur sur une correction précise.
+    if (!context.diagnostics.some((d) => d.source === 'DSFR' && d.code !== FIX_CODE)) return actions;
+    for (const issue of lintBlocks(document.getText())) {
+      if (!issue.fixes.length || issue.range.line < range.start.line || issue.range.line > range.end.line) continue;
+      const linked = diagnosticFor(context.diagnostics, issue);
+      if (!linked.length) continue;
+      for (const fix of issue.fixes) {
+        const action = new vscode.CodeAction(fix.title, vscode.CodeActionKind.QuickFix);
+        action.edit = new vscode.WorkspaceEdit();
+        for (const e of fix.edits) {
+          action.edit.replace(document.uri, new vscode.Range(e.start.line, e.start.character, e.end.line, e.end.character), e.text);
+        }
+        action.diagnostics = linked;
+        action.isPreferred = !!fix.preferred;
+        actions.push(action);
+      }
+    }
+    return actions;
   },
 };
+
+/* --- Localiser les problèmes de la page ------------------------------------------------ */
+
+const plural = (n, word) => n + ' ' + word + (n > 1 ? 's' : '');
+
+/** Problèmes DSFR de la page, triés par ligne (ceux du panneau Problèmes). */
+function pageProblems(document) {
+  lintDocument(document);
+  const list = (diagnostics && diagnostics.get(document.uri)) || [];
+  return list.slice().sort((a, b) => a.range.start.line - b.range.start.line || a.range.start.character - b.range.start.character);
+}
+
+// Compteur de la barre d'état : visible seulement s'il y a des problèmes dans la page active.
+function updateProblemsCount() {
+  if (!problemsItem) return;
+  const editor = vscode.window.activeTextEditor;
+  const list = editor && editor.document.languageId === 'markdown' && diagnostics ? diagnostics.get(editor.document.uri) || [] : [];
+  if (!list.length) {
+    problemsItem.hide();
+    return;
+  }
+  const errors = list.filter((d) => d.severity === vscode.DiagnosticSeverity.Error).length;
+  problemsItem.text = (errors ? '$(error) ' : '$(warning) ') + list.length + ' DSFR';
+  problemsItem.tooltip = plural(list.length, 'problème') + ' DSFR dans cette page — cliquer pour les lister avec leur ligne';
+  problemsItem.show();
+}
+
+/**
+ * Commande « DSFR : Problèmes de la page » : liste les problèmes de la page ouverte avec leur
+ * ligne ; en choisir un place le curseur dessus. Rien n'est modifié dans la page.
+ * @param {vscode.Uri} [uri]
+ */
+async function listProblems(uri) {
+  const editor = vscode.window.activeTextEditor;
+  let document = editor && editor.document.languageId === 'markdown' ? editor.document : null;
+  if (uri instanceof vscode.Uri) document = await vscode.workspace.openTextDocument(uri);
+  if (!document) {
+    vscode.window.showWarningMessage('Ouvrez d\'abord un fichier Markdown.');
+    return;
+  }
+  const problems = pageProblems(document);
+  if (!problems.length) {
+    vscode.window.showInformationMessage('DSFR : aucun problème dans cette page.');
+    return;
+  }
+  const items = problems.map((d) => ({
+    label: (d.severity === vscode.DiagnosticSeverity.Error ? '$(error)' : '$(warning)') + ' Ligne ' + (d.range.start.line + 1),
+    description: (document.lineAt(d.range.start.line).text || '').trim().slice(0, 60),
+    detail: d.message,
+    diagnostic: d,
+  }));
+  const picked = await vscode.window.showQuickPick(items, {
+    title: 'DSFR : ' + plural(problems.length, 'problème') + ' dans cette page',
+    placeHolder: 'Choisir un problème pour aller à sa ligne',
+    matchOnDetail: true,
+  });
+  if (!picked) return;
+  const shown = await vscode.window.showTextDocument(document, { preview: false });
+  const r = picked.diagnostic.range;
+  shown.selection = new vscode.Selection(r.start.line, r.start.character, r.end.line, r.end.character);
+  shown.revealRange(r, vscode.TextEditorRevealType.InCenter);
+}
 
 /**
  * Commande « Corriger les en-têtes YAML des fichiers Markdown » : parcourt le dossier ouvert,
@@ -242,6 +428,51 @@ async function fixFrontMatterInWorkspace() {
   vscode.window.showInformationMessage(todo.length + ' fichier(s) corrigé(s).');
 }
 
+/* ------------------------------------------------------------------ */
+/* Autocomplétion et aide au survol des blocs DSFR (lib/assist.js)     */
+/* ------------------------------------------------------------------ */
+
+const COMPLETION_KIND = () => ({
+  block: vscode.CompletionItemKind.Module,
+  option: vscode.CompletionItemKind.Property,
+  value: vscode.CompletionItemKind.Value,
+});
+
+function createAssistProviders(context) {
+  const media = (...p) => context.asAbsolutePath(path.join('media', 'dsfr', ...p));
+  const assets = { artworkDir: media('artwork', 'pictograms'), cssFiles: [media('dsfr.min.css'), media('utility', 'utility.min.css')] };
+  const linesOf = (document) => document.getText().split('\n').map((l) => l.replace(/\r$/, ''));
+
+  const completion = {
+    provideCompletionItems(document, position) {
+      if (!isEnabled()) return undefined;
+      const r = assist.completions(linesOf(document), position.line, position.character, assets);
+      if (!r) return undefined;
+      const range = new vscode.Range(position.line, r.from, position.line, position.character);
+      return r.items.map((it, i) => {
+        const item = new vscode.CompletionItem(it.label, COMPLETION_KIND()[it.kind]);
+        item.insertText = it.snippet ? new vscode.SnippetString(it.insertText) : it.insertText;
+        item.range = range;
+        item.sortText = String(i).padStart(4, '0'); // ordre de options.js (le plus courant d'abord)
+        if (it.detail) item.detail = it.detail;
+        if (it.documentation) item.documentation = new vscode.MarkdownString(it.documentation);
+        if (it.retrigger) item.command = { command: 'editor.action.triggerSuggest', title: 'Valeurs possibles' };
+        return item;
+      });
+    },
+  };
+
+  const hover = {
+    provideHover(document, position) {
+      if (!isEnabled()) return undefined;
+      const h = assist.hover(linesOf(document), position.line, position.character);
+      if (!h) return undefined;
+      return new vscode.Hover(new vscode.MarkdownString(h.markdown), new vscode.Range(h.range.line, h.range.start, h.range.line, h.range.end));
+    },
+  };
+  return { completion, hover };
+}
+
 // Commande « Activer / désactiver l'aperçu DSFR » (aussi déclenchée par l'indicateur).
 async function toggle() {
   const on = isEnabled();
@@ -252,6 +483,9 @@ async function toggle() {
 function activate(context) {
   statusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
   statusItem.command = 'dsfrPreview.toggle';
+  problemsItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 99);
+  problemsItem.command = 'dsfrPreview.listProblems';
+  const providers = createAssistProviders(context);
 
   context.subscriptions.push(
     statusItem,
@@ -262,17 +496,27 @@ function activate(context) {
         lintOpenDocuments();
       }
     }),
-    vscode.window.onDidChangeActiveTextEditor(updateStatus),
+    vscode.window.onDidChangeActiveTextEditor(() => { updateStatus(); updateProblemsCount(); }),
     vscode.commands.registerCommand('dsfrPreview.toggle', toggle),
     vscode.commands.registerCommand('dsfrPreview.open', open),
     vscode.commands.registerCommand('dsfrPreview.openToSide', openToSide),
     vscode.commands.registerCommand('dsfrPreview.openInNewWindow', openInNewWindow),
     vscode.commands.registerCommand('dsfrPreview.fixFrontMatterInWorkspace', fixFrontMatterInWorkspace),
+    vscode.commands.registerCommand('dsfrPreview.listProblems', listProblems),
+    problemsItem,
+    vscode.languages.onDidChangeDiagnostics(updateProblemsCount),
     diagnostics = vscode.languages.createDiagnosticCollection('dsfr'),
-    vscode.languages.registerCodeActionsProvider({ language: 'markdown' }, codeActionProvider, { providedCodeActionKinds: [vscode.CodeActionKind.QuickFix] }),
+    vscode.languages.registerCodeActionsProvider({ language: 'markdown' }, codeActionProvider, {
+      providedCodeActionKinds: [vscode.CodeActionKind.QuickFix],
+    }),
+    vscode.languages.registerCompletionItemProvider({ language: 'markdown' }, providers.completion, '/', ' ', ':'),
+    vscode.languages.registerHoverProvider({ language: 'markdown' }, providers.hover),
     vscode.workspace.onDidOpenTextDocument(lintDocument),
-    vscode.workspace.onDidChangeTextDocument((e) => lintDocument(e.document)),
-    vscode.workspace.onDidCloseTextDocument((document) => diagnostics.delete(document.uri))
+    vscode.workspace.onDidChangeTextDocument((e) => scheduleLint(e.document)),
+    vscode.workspace.onDidCloseTextDocument(forgetDocument),
+    // Un fichier enregistré (autre page, image renommée, mkdocs.yml…) peut changer les liens des pages ouvertes.
+    vscode.workspace.onDidSaveTextDocument(() => lintOpenDocuments()),
+    { dispose: () => { for (const t of lintTimers.values()) clearTimeout(t); lintTimers.clear(); } }
   );
   updateStatus();
   lintOpenDocuments();

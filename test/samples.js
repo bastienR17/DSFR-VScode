@@ -19,4 +19,17 @@ const errors = createMd({ showErrors: () => true }).render(read('erreurs.md'), {
 const expected = (read('erreurs.md').match(/^## /gm) || []).length + (read('erreurs.md').startsWith('---') ? 1 : 0);
 assert.strictEqual(count(errors), expected, 'erreurs.md : une erreur attendue par section, plus l\'en-tête');
 assert(errors.includes("title: 'Guide: erreurs courantes'"), 'la correction de l\'en-tête doit être proposée');
-console.log('Pages d\'exemple : demo.md sans erreur, erreurs.md avec ' + expected + ' erreurs signalées OK');
+// Chaque encadré indique la ligne du problème (la même que le soulignement dans l'éditeur)
+// et porte data-line : un double-clic dans l'aperçu ramène l'éditeur à cette ligne.
+const boxLines = [...errors.matchAll(/class="dsfr-preview-error [^"]*code-line" data-line="(\d+)"[^>]*><p class="dsfr-preview-error__label">[^<]*<span class="dsfr-preview-error__line">· ligne (\d+)</g)]
+  .map((m) => { assert.strictEqual(Number(m[2]), Number(m[1]) + 1); return Number(m[1]); });
+assert.strictEqual(boxLines.length, expected, 'chaque encadré doit indiquer sa ligne');
+const { createLinter } = require('../lib/lint');
+const editorLines = createLinter()(read('erreurs.md')).map((i) => i.range.line);
+const fileLines = read('erreurs.md').split('\n');
+for (const l of editorLines) {
+  // même ligne, ou ligne d'en-tête du bloc pour une option soulignée plus bas
+  const near = boxLines.some((b) => b === l || (b < l && l - b <= 4 && /^\s{4,}\w+\s*:/.test(fileLines[l])));
+  assert(near, 'problème ligne ' + (l + 1) + ' sans encadré à la même ligne : ' + boxLines.map((b) => b + 1).join(', '));
+}
+console.log('Pages d\'exemple : demo.md sans erreur, erreurs.md avec ' + expected + ' erreurs signalées, chacune avec sa ligne OK');

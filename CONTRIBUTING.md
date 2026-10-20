@@ -1,7 +1,8 @@
 # Contribuer
 
-Merci de votre intérêt ! Ce document explique comment le projet est organisé, comment le tester
-et comment publier une version.
+Extension créée et maintenue par Bastien ([@bastienR17](https://github.com/bastienR17)).
+Ce document explique comment le projet est organisé, comment le tester et comment publier une version.
+Pour signaler un rendu différent du site ou proposer une idée, ouvrez une issue : des modèles sont proposés.
 
 ## Prérequis
 
@@ -27,7 +28,8 @@ recharger cette fenêtre (**Ctrl+R**).
 L'extension ne crée pas son propre aperçu : elle enrichit l'aperçu Markdown intégré à VS Code.
 
 ```
-extension.js              point d'entrée VS Code : réglages, commandes, indicateur de la barre d'état
+extension.js              point d'entrée VS Code : réglages, commandes, barre d'état, soulignements,
+                          corrections rapides, autocomplétion et survol
 lib/
   dsfr-markdown-it.js     plugin markdown-it : règles d'analyse et de rendu, assemblage des modules
   options.js              blocs connus, options autorisées, lecture du YAML des options
@@ -36,7 +38,13 @@ lib/
   frontmatter.js          lecture de l'en-tête YAML, détection et correction des valeurs contenant « : »
   mkdocs-compat.js        écarts entre markdown-it et Python-Markdown
   html.js                 échappement HTML et encadrés d'erreur
-  vendor/                 js-yaml et markdown-it-deflist (fichiers tiers, non modifiés)
+  lint.js                 problèmes de la page pour l'éditeur : position exacte et corrections rapides
+  similar.js              fautes de frappe : distance entre deux mots, valeur la plus proche
+  links.js                liens, images et ancres introuvables
+  mkdocs-config.js        lecture facultative du mkdocs.yml (docs_dir, markdown_extensions)
+  assist.js               autocomplétion et aide au survol
+  catalog.js              descriptions des blocs et options, liens vers la documentation du thème
+  vendor/                 markdown-it, js-yaml et markdown-it-deflist (fichiers tiers, non modifiés)
 media/
   dsfr/                   CSS, polices, icônes et pictogrammes du DSFR (copiés du thème mkdocs-dsfr)
   dsfr-preview.css        ajustements de l'aperçu et style des encadrés d'erreur
@@ -49,13 +57,17 @@ scripts/captures.py       régénère les captures d'écran du README
 
 Le plugin (`lib/`) ne dépend pas de VS Code : il se teste avec Node seul.
 
-Deux points à connaître avant de modifier le code :
+Trois points à connaître avant de modifier le code :
 
 - **Le contenu de l'aperçu est inséré après le chargement de `dsfr-preview.js`**, puis remplacé à
   chaque frappe. Le script surveille donc le contenu (MutationObserver) au lieu de supposer qu'il est
   présent, et mémorise l'état des accordéons et onglets d'un rendu à l'autre.
 - **Les réglages sont relus à chaque rendu** : les options passées au plugin sont des fonctions.
   Un changement de réglage ne demande qu'un rafraîchissement de l'aperçu.
+- **L'aperçu et l'éditeur signalent les mêmes problèmes** : chaque encadré d'erreur du plugin est aussi
+  noté dans `env.dsfrIssues` (fonction `report`). `lib/lint.js` rend la page avec un markdown-it privé,
+  récupère ces problèmes et y ajoute la position exacte et les corrections. Un nouveau contrôle s'ajoute
+  donc dans le plugin, avec un appel à `report`, puis sa correction éventuelle dans `lint.js`.
 
 ## Tests
 
@@ -70,14 +82,17 @@ npm run test:browser   # script de l'aperçu dans Chromium
 |---|---|
 | `test/compare.py` | Le HTML de l'extension est identique à celui du vrai moteur du site (Python-Markdown + `dsfr_structure` 0.12), sur les cas de test officiels de `dsfr_structure` et sur `test/cases.json`. Les quelques écarts voulus sont listés dans le script. |
 | `test/doc_check.py` | Les 41 exemples de la [documentation du thème](https://pub.gitlab-pages.din.developpement-durable.gouv.fr/numeco/mkdocs-dsfr-doc/) (`test/doc_examples.py`) : rendu identique au site, aucune erreur signalée. |
-| `test/errors.js` | Signalement des erreurs, adresses dangereuses neutralisées, rendu désactivé. |
+| `test/errors.js` | Signalement des erreurs, adresses dangereuses neutralisées, guillemets échappés dans toutes les options texte, rendu désactivé. |
 | `test/frontmatter.js` | Composants de l'en-tête YAML et leurs erreurs. |
 | `test/frontmatter-fix.js` | Détection et correction des en-têtes illisibles (valeurs contenant « : »). |
 | `test/frontmatter_mkdocs.py` | Avec le lecteur de métadonnées de MkDocs : l'en-tête fautif est ignoré, l'en-tête corrigé est lu. |
+| `test/lint.js` | Problèmes soulignés dans l'éditeur : position exacte, corrections rapides appliquées puis revérifiées. |
+| `test/assist.js` | Autocomplétion (blocs, options, valeurs, pictogrammes, icônes) et aide au survol. |
+| `test/links.js` | Liens, images et ancres introuvables ; identifiants de titres comme MkDocs ; lecture du `mkdocs.yml`. |
 | `test/snippets.js` | Chaque snippet produit un composant valide. |
-| `test/samples.js` | `demo.md` ne signale aucune erreur ; `erreurs.md` en signale une par section. |
-| `test/extension-host.js` | `extension.js` avec une API VS Code simulée : réglages, commandes déclarées, aperçu à côté, fenêtre séparée, soulignement et correction des en-têtes. |
-| `test/preview_browser.py` | `dsfr-preview.js` dans Chromium, avec le chargement différé de VS Code. |
+| `test/samples.js` | `demo.md` ne signale aucune erreur ; `erreurs.md` en signale une par section, chaque encadré à la ligne du problème. |
+| `test/extension-host.js` | `extension.js` avec une API VS Code simulée : réglages, commandes déclarées, aperçu à côté, fenêtre séparée, soulignements, corrections, autocomplétion et survol. |
+| `test/preview_browser.py` | `dsfr-preview.js` dans Chromium, avec le chargement différé de VS Code et le passage d'une page à l'autre. |
 
 Pour comparer une page réelle : `cd test && python3 page.py chemin/vers/page.md`
 (les deux rendus sont écrits dans `/tmp/page_py.html` et `/tmp/page_js.html`).
@@ -109,8 +124,8 @@ version, mettre à jour `requirements-dev.txt`, relancer `npm test` et reporter 
 2. Si le rendu a changé, régénérer les captures : `python3 scripts/captures.py`.
 3. Créer et pousser une étiquette :
    ```bash
-   git tag v0.8.1
-   git push origin v0.8.1
+   git tag v0.9.2
+   git push origin v0.9.2
    ```
 4. La CI teste, construit le `.vsix` et le joint à une Release GitHub.
 

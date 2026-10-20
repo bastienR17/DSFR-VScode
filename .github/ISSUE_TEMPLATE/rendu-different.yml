@@ -1,0 +1,37 @@
+name: Rendu différent du site
+description: L'aperçu n'affiche pas la page comme le site MkDocs DSFR, ou signale une erreur à tort.
+labels: [rendu]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Merci ! Un exemple de Markdown court qui reproduit le problème permet de le corriger vite.
+        N'indiquez pas d'information confidentielle (données personnelles, adresses internes…).
+  - type: textarea
+    id: markdown
+    attributes:
+      label: Markdown concerné
+      description: Le plus petit extrait qui montre le problème.
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: attendu
+    attributes:
+      label: Rendu sur le site
+      description: Ce que le site affiche (capture d'écran bienvenue).
+    validations:
+      required: true
+  - type: textarea
+    id: obtenu
+    attributes:
+      label: Rendu dans l'aperçu
+      description: Ce que l'aperçu affiche, ou le message d'erreur souligné.
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Extension (panneau Extensions), VS Code (Aide → À propos) et, si vous la connaissez, version du thème mkdocs-dsfr.
+      placeholder: "extension 0.9.2, VS Code 1.95, mkdocs-dsfr 0.26.1"

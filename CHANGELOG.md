@@ -2,6 +2,83 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## 0.9.2 — octobre 2026
+
+Localiser les problèmes, sans jamais modifier la page à la place de l'auteur.
+
+### Ajouts
+- **Commande « DSFR : Problèmes de la page »** (clic droit dans le Markdown, ou palette) : liste les
+  problèmes de la page avec leur ligne ; en choisir un place le curseur dessus.
+- **Compteur dans la barre d'état** (« ⚠ 3 DSFR ») quand la page a des problèmes ; un clic les liste.
+- **« ``` » fautif désigné** : quand un bloc n'est pas fermé à cause d'un « ``` » en trop ou non refermé,
+  le message donne la ligne de ce « ``` » (ex. « le « ``` » de la ligne 505 semble en trop »), et
+  cette ligne est soulignée dans l'éditeur.
+- **Nom de bloc inconnu** (`/// alrt`) : signalé, avec le nom le plus proche (`alert`).
+- **« /// » en trop**, qui ne ferme aucun bloc : signalé (sauf la fermeture d'un bloc déjà signalé).
+- **Snippet `dsfr-img`** : image hébergée sur Doc SIRH,
+  `![Description de l'image](https://docsirh.e2.rie.gouv.fr/fichiers/Dossier/image.png)` ; **Tab** passe
+  de la description au dossier puis au nom du fichier.
+
+### Retraits
+- Commande « DSFR : Corriger la page » et correction à l'enregistrement (`source.fixAll.dsfr`) :
+  l'extension ne modifie plus la page d'elle-même. Les corrections de l'ampoule restent proposées,
+  une par une, et ne s'appliquent que sur un clic.
+
+## 0.9.1 — octobre 2026
+
+Corriger plus vite, et savoir où chercher. Constaté sur une vraie page Doc SIRH.
+
+### Ajouts
+- **Commande « DSFR : Corriger la page »** (clic droit dans le Markdown, ou palette) : applique d'un coup les
+  corrections sûres, en une modification annulable par Ctrl+Z, et liste le reste avec ses lignes (message,
+  bouton « Aller au premier », journal DSFR dans le panneau Sortie). Aussi disponible à l'enregistrement
+  (`editor.codeActionsOnSave` → `source.fixAll.dsfr`, désactivé par défaut) et en dernier choix de l'ampoule.
+  Synonymes français reconnus (`ouvert` → `open`, `erreur` → `error`…).
+- **Encadrés d'erreur de l'aperçu** : ligne du fichier dans le titre (« Attention · ligne 99 »), double-clic
+  pour y placer l'éditeur ; une option fautive est indiquée à sa propre ligne ; un bloc non fermé est
+  signalé là où il commence, et non plus en bas de page.
+- **Bloc non fermé à cause d'un « ``` »** : quand un bloc de code est ouvert sans être refermé
+  (ou qu'un « ``` » est en trop), tout ce qui suit est lu comme du code et les « /// » de fermeture
+  disparaissent. Le message indique maintenant entre quelles lignes chercher ce « ``` », au lieu de
+  proposer une fermeture qui ne réglerait rien. Pour un conteneur (onglets, grille…), la fermeture
+  est proposée en fin de page plutôt qu'au milieu de son contenu.
+
+### Corrections
+- Gras dont le texte finit par une espace (`des **limites **à garder`) : affiché en gras comme sur le
+  site, au lieu des « ** » bruts de VS Code.
+
+## 0.9.0 — octobre 2026
+
+Écrire juste du premier coup : les problèmes sont signalés dans le Markdown, page par page.
+
+### Ajouts
+- **Problèmes soulignés dans l'éditeur** : tout ce que l'aperçu signale (option inconnue, valeur invalide,
+  titre manquant ou en trop, bloc non fermé, pictogramme introuvable, `/// notice` déprécié, bouton à icône
+  réduit dans un groupe, liste mal indentée, bandeau et fil d'Ariane de l'en-tête) apparaît aussi dans le
+  panneau **Problèmes**, à la ligne et à la colonne exactes. Seule la page ouverte est analysée.
+- **Corrections rapides** (ampoule) : valeur la plus proche (`warnig` → `warning`, `oui` → `true`),
+  option renommée ou retirée, titre ajouté ou retiré, bloc fermé, classe `fr-btns-group--icon-*` ajoutée
+  au groupe de boutons, type de bandeau corrigé.
+- **Autocomplétion** des noms de blocs après `///`, des options d'un bloc et de leurs valeurs
+  (listes, booléens, 102 pictogrammes et icônes du DSFR), et du type de bandeau dans l'en-tête.
+- **Aide au survol** des blocs et des options : description, valeurs possibles, valeur par défaut,
+  lien vers la page du composant dans la documentation du thème.
+- **Liens, images et ancres introuvables** soulignés (liens `.md`, images, fichiers, adresses des options
+  `image`, `target`…). Nouveau réglage `dsfrPreview.checkLinks`.
+- **Lecture facultative du `mkdocs.yml`** : liens absolus résolus depuis `docs_dir`, et signalement des
+  syntaxes utilisées mais non activées dans `markdown_extensions` (`///`, `!!!`, `???`, `attr_list`, `def_list`).
+- **L'aperçu suit la page ouverte** et chaque page retrouve ses accordéons et onglets ouverts
+  quand on y revient. Une option `open: true` modifiée dans le Markdown est de nouveau suivie.
+- Modèles d'issues GitHub : « Rendu différent du site » et « Idée ou amélioration ».
+
+### Corrections
+- `/// notice` : une icône contenant des guillemets cassait le HTML de l'aperçu (valeur maintenant échappée).
+- `attr_list` : les noms d'attributs invalides et les gestionnaires d'événements (`onclick`…) sont ignorés dans l'aperçu.
+
+### Divers
+- Auteur indiqué dans la licence, le `package.json` et le README : Bastien (bastienR17).
+- markdown-it 14 inclus dans l'extension (`lib/vendor/`) pour analyser la page côté éditeur.
+
 ## 0.8.1 — octobre 2026
 
 ### Corrections

@@ -12,7 +12,9 @@ for (const [name, s] of Object.entries(snippets)) {
   const full = /en-tête ---/.test(s.description) ? '---\n' + src + '\n---\n\n# Titre\n\n## Partie\n' : src;
   const html = createMd({ showErrors: () => true }).render(full, {});
   assert(!html.includes('dsfr-preview-error'), 'Snippet « ' + name + ' » invalide :\n' + src + '\n' + html);
-  assert(/class="fr-/.test(html), 'Snippet « ' + name + ' » sans classe DSFR :\n' + html);
+  // Un composant DSFR produit des classes fr-* ; une simple image Markdown (dsfr-img), non.
+  if (src.startsWith('![')) assert(/<img src="https:\/\/docsirh\.e2\.rie\.gouv\.fr\/fichiers\/[^"]+" alt="[^"]+">/.test(html), 'Snippet « ' + name + ' » : image attendue :\n' + html);
+  else assert(/class="fr-/.test(html), 'Snippet « ' + name + ' » sans classe DSFR :\n' + html);
   n++;
 }
-console.log('Snippets : ' + n + ' rendus DSFR valides');
+console.log('Snippets : ' + n + ' rendus valides');

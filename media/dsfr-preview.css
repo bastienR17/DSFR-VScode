@@ -102,6 +102,21 @@ html[data-fr-theme='dark'] .dsfr-preview-error--warning .dsfr-preview-error__lab
   font-size: 0.875rem;
 }
 
+/* Ligne du fichier et aide : l'encadré ramène l'éditeur à cette ligne par un double-clic */
+.dsfr-preview-error.code-line {
+  cursor: pointer;
+}
+
+.dsfr-preview-error__line {
+  font-weight: 400;
+}
+
+.dsfr-preview-error__hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
 /* Sommaire déclaré dans l'en-tête : espace avant le contenu, comme sur le site */
 body.dsfr-preview .fr-summary {
   margin-bottom: 2rem;

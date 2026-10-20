@@ -10,16 +10,30 @@ const workspaceSettings = {};
 const updates = [];
 const calls = [];
 let oldVsCode = false;
-class Uri { constructor(p) { this.fsPath = p; } toString() { return 'file://' + this.fsPath; } }
+class Uri { constructor(p) { this.fsPath = p; this.scheme = 'file'; } toString() { return 'file://' + this.fsPath; } }
 // Éditeurs affichés (colonne → document) et suivi du focus, pour vérifier la disposition côte à côte
 const shown = [];
 let focused = null;
 // Diagnostics, ampoules et modifications de fichiers
 const diagStore = new Map();
 let codeActionProvider = null;
+let pickItems = null;
+let pickAnswer = () => undefined;
+let lastSelection = null;
+const statusItems = [];
+let diagnosticsListener = null;
+const messages = [];
+let completionProvider = null;
+let hoverProvider = null;
 let modalAnswer;
 const saved = [];
-class Range { constructor(sl, sc, el, ec) { Object.assign(this, { sl, sc, el, ec }); } }
+class Range {
+  constructor(sl, sc, el, ec) {
+    Object.assign(this, { sl, sc, el, ec });
+    this.start = { line: sl, character: sc };
+    this.end = { line: el, character: ec };
+  }
+}
 class Diagnostic { constructor(range, message, severity) { Object.assign(this, { range, message, severity }); } }
 class CodeAction { constructor(title, kind) { Object.assign(this, { title, kind }); } }
 class WorkspaceEdit {
@@ -55,13 +69,21 @@ const vscode = {
     onDidOpenTextDocument: noop,
     onDidChangeTextDocument: noop,
     onDidCloseTextDocument: noop,
+    onDidSaveTextDocument: noop,
+    getWorkspaceFolder: () => undefined,
     // Applique les remplacements de lignes directement sur le disque
     applyEdit: async (edit) => {
       for (const e of edit.entries) {
-        const lines = fs.readFileSync(e.uri.fsPath, 'utf8').split('\n');
-        const eol = lines[e.range.sl].endsWith('\r') ? '\r' : '';
-        lines[e.range.sl] = lines[e.range.sl].slice(0, e.range.sc) + e.text + lines[e.range.sl].slice(e.range.ec).replace(/\r$/, '') + eol;
-        fs.writeFileSync(e.uri.fsPath, lines.join('\n'));
+        const text = fs.readFileSync(e.uri.fsPath, 'utf8');
+        const lines = text.split('\n');
+        // Position → indice dans le texte ; une colonne au-delà de la ligne s'arrête avant le « \r » final
+        const at = (l, c) => {
+          if (l >= lines.length) return text.length;
+          let n = 0;
+          for (let i = 0; i < l; i++) n += lines[i].length + 1;
+          return n + Math.min(c, lines[l].replace(/\r$/, '').length);
+        };
+        fs.writeFileSync(e.uri.fsPath, text.slice(0, at(e.range.sl, e.range.sc)) + e.text + text.slice(at(e.range.el, e.range.ec)));
       }
       return true;
     },
@@ -72,15 +94,20 @@ const vscode = {
   },
   window: {
     activeTextEditor: null,
-    createStatusBarItem: () => ({ show() {}, hide() {}, dispose() {} }),
+    createStatusBarItem: () => {
+      const item = { visible: false, show() { this.visible = true; }, hide() { this.visible = false; }, dispose() {}, refresh: () => diagnosticsListener && diagnosticsListener() };
+      statusItems.push(item);
+      return item;
+    },
+    showQuickPick: async (items) => { pickItems = items; return pickAnswer(items); },
     onDidChangeActiveTextEditor: noop,
-    showInformationMessage: async () => undefined,
-    showWarningMessage: async (message, options) => (options && options.modal ? modalAnswer : undefined),
+    showInformationMessage: async (message) => { messages.push(message); return undefined; },
+    showWarningMessage: async (message, options) => { messages.push(message); return options && options.modal ? modalAnswer : undefined; },
     showErrorMessage: async () => undefined,
     visibleTextEditors: [],
     showTextDocument: async (target, opts) => {
       const document = target.uri ? target : { uri: target, languageId: 'markdown' };
-      const editor = { document, viewColumn: opts.viewColumn };
+      const editor = { document, viewColumn: opts.viewColumn, revealRange() {}, set selection(sel) { lastSelection = sel; } };
       shown.push({ uri: document.uri.toString(), column: opts.viewColumn, preserveFocus: !!opts.preserveFocus });
       if (!opts.preserveFocus) focused = 'editor:' + opts.viewColumn;
       return editor;
@@ -98,13 +125,31 @@ const vscode = {
     createDiagnosticCollection: () => ({
       set: (uri, list) => diagStore.set(uri.toString(), list),
       delete: (uri) => diagStore.delete(uri.toString()),
+      get: (uri) => diagStore.get(uri.toString()),
       dispose() {},
     }),
     registerCodeActionsProvider: (selector, provider) => { codeActionProvider = provider; return { dispose() {} }; },
+    registerCompletionItemProvider: (selector, provider, ...triggers) => { completionProvider = { provider, triggers }; return { dispose() {} }; },
+    registerHoverProvider: (selector, provider) => { hoverProvider = provider; return { dispose() {} }; },
+    onDidChangeDiagnostics: (fn) => { diagnosticsListener = fn; return { dispose() {} }; },
   },
+  CompletionItem: class { constructor(label, kind) { Object.assign(this, { label, kind }); } },
+  CompletionItemKind: { Module: 8, Property: 9, Value: 11 },
+  SnippetString: class { constructor(value) { this.value = value; } },
+  MarkdownString: class { constructor(value) { this.value = value; } },
+  Hover: class { constructor(contents, range) { Object.assign(this, { contents, range }); } },
   Range, Diagnostic, CodeAction, WorkspaceEdit,
   DiagnosticSeverity: { Error: 0, Warning: 1 },
-  CodeActionKind: { QuickFix: 'quickfix' },
+  CodeActionKind: (() => {
+    const kind = (value) => ({
+      value,
+      append: (part) => kind(value + '.' + part),
+      intersects: (other) => value === other.value || value.startsWith(other.value + '.') || other.value.startsWith(value + '.'),
+    });
+    return { QuickFix: kind('quickfix') };
+  })(),
+  Selection: class { constructor(l, c) { Object.assign(this, { line: l, character: c }); } },
+  TextEditorRevealType: { InCenter: 2 },
   Uri,
   ViewColumn: { One: 1, Two: 2, Beside: -2 },
   StatusBarAlignment: { Right: 2 },
@@ -212,6 +257,80 @@ async function lintVia(document) {
   assert.strictEqual((await lintVia(badDoc)).length, 0);
   settings.showErrors = true;
 
+  // Bloc DSFR mal écrit : souligné à la bonne ligne, ampoule avec la valeur la plus proche
+  const blockText = '# Page\n\n/// alert | Titre\n    type: warnig\nTexte\n///\n\n/// accordion | Ouvert\nTexte\n';
+  const blockDoc = textDocument(new Uri('/tmp/other/blocs.md'), blockText);
+  const blockDiags = await lintVia(blockDoc);
+  assert.deepStrictEqual(blockDiags.map((d) => [d.range.sl, d.code, d.severity]), [[3, 'dsfr-invalid-block', 0], [7, 'dsfr-unclosed', 1]]);
+  assert.deepStrictEqual([blockDiags[0].range.sc, blockDiags[0].range.ec], [10, 16]);
+  let blockActions = codeActionProvider.provideCodeActions(blockDoc, blockDiags[0].range, { diagnostics: [blockDiags[0]] });
+  assert.deepStrictEqual(blockActions.map((a) => a.title), ['Remplacer « warnig » par « warning »']);
+  assert(blockActions[0].isPreferred && blockActions[0].edit.entries[0].text === 'warning');
+  blockActions = codeActionProvider.provideCodeActions(blockDoc, blockDiags[1].range, { diagnostics: [blockDiags[1]] });
+  assert.deepStrictEqual(blockActions.map((a) => a.title), ['Fermer le bloc par « /// » à la fin de la page'], 'fermeture du bloc proposée');
+  // Ampoule demandée sur une autre ligne : rien
+  assert.strictEqual(codeActionProvider.provideCodeActions(blockDoc, new Range(0, 0, 0, 0), { diagnostics: [] }).length, 0);
+  // Rendu DSFR coupé : plus de soulignement
+  settings.enabled = false;
+  assert.strictEqual((await lintVia(blockDoc)).length, 0);
+  settings.enabled = true;
+
+  // Liens et images introuvables, syntaxe non activée dans le mkdocs.yml du site
+  const site = fs.mkdtempSync(path.join(os.tmpdir(), 'dsfr-site-'));
+  fs.mkdirSync(path.join(site, 'docs'));
+  fs.writeFileSync(path.join(site, 'mkdocs.yml'), 'markdown_extensions:\n  - attr_list\n');
+  fs.writeFileSync(path.join(site, 'docs', 'autre.md'), '# Autre\n');
+  const linkText = '# Page\n\n[Ok](autre.md) [Cassé](absent.md) ![Image](img.png)\n\n/// alert | Titre\nTexte\n///\n';
+  const linkDoc = textDocument(new Uri(path.join(site, 'docs', 'page.md')), linkText);
+  let siteDiags = await lintVia(linkDoc);
+  assert.deepStrictEqual(siteDiags.map((d) => d.code + '@' + d.range.sl), ['dsfr-link-missing@2', 'dsfr-file-missing@2', 'dsfr-mkdocs-extension@4']);
+  settings.checkLinks = false;
+  assert.strictEqual((await lintVia(linkDoc)).length, 0, 'réglage checkLinks coupé');
+  delete settings.checkLinks;
+  // Fichier hors du dossier des pages (README à la racine) : liens vérifiés, mais pas le mkdocs.yml
+  const readme = textDocument(new Uri(path.join(site, 'README.md')), linkText);
+  siteDiags = await lintVia(readme);
+  assert.deepStrictEqual(siteDiags.map((d) => d.code), ['dsfr-link-missing', 'dsfr-link-missing', 'dsfr-file-missing']);
+  fs.rmSync(site, { recursive: true, force: true });
+
+  // Commande « Problèmes de la page » : liste avec les lignes, rien n'est modifié ; compteur dans la barre d'état
+  assert(!commands['dsfrPreview.fixPage'], 'plus de correction automatique');
+  const listText = '/// alert | A\n    type: warnig\nTexte\n///\n\n/// alert | B\n    type: rouge\nTexte\n///\n';
+  const listDoc = textDocument(new Uri('/tmp/other/liste.md'), listText);
+  vscode.window.activeTextEditor = { document: listDoc };
+  pickItems = null; pickAnswer = (list) => list[1];
+  await commands['dsfrPreview.listProblems']();
+  assert.deepStrictEqual(pickItems.map((i) => i.label), ['$(error) Ligne 2', '$(error) Ligne 7']);
+  assert(pickItems[1].detail.startsWith('Valeur « rouge » invalide'), pickItems[1].detail);
+  assert.deepStrictEqual([lastSelection.line, lastSelection.character], [6, 10], 'curseur placé sur le problème choisi');
+  assert.strictEqual(listDoc.getText(), listText);
+  statusItems[1].refresh();
+  assert.strictEqual(statusItems[1].text, '$(error) 2 DSFR');
+  assert(statusItems[1].visible && statusItems[1].command === 'dsfrPreview.listProblems');
+  // Page sans problème : message, compteur masqué
+  const okDoc = textDocument(new Uri('/tmp/other/ok.md'), '# Titre\n');
+  vscode.window.activeTextEditor = { document: okDoc };
+  messages.length = 0;
+  await commands['dsfrPreview.listProblems']();
+  assert.strictEqual(messages[0], 'DSFR : aucun problème dans cette page.');
+  statusItems[1].refresh();
+  assert(!statusItems[1].visible);
+  vscode.window.activeTextEditor = null;
+
+  // Autocomplétion et survol branchés sur l'éditeur
+  assert.deepStrictEqual(completionProvider.triggers, ['/', ' ', ':']);
+  const optDoc = textDocument(new Uri('/tmp/other/opts.md'), '/// tile | Titre\n    picto: build\n');
+  const items = completionProvider.provider.provideCompletionItems(optDoc, { line: 1, character: 16 });
+  assert(items.length > 10 && items.every((i) => i.range.sc === 11), 'valeurs de picto, remplacement de « build »');
+  assert(items.some((i) => i.label === 'buildings/city-hall'));
+  const blockItems = completionProvider.provider.provideCompletionItems(textDocument(new Uri('/tmp/x.md'), '/// acc'), { line: 0, character: 7 });
+  assert.strictEqual(blockItems.find((i) => i.label === 'accordion').insertText.value, 'accordion | ${1:Titre}');
+  const hov = hoverProvider.provideHover(optDoc, { line: 1, character: 6 });
+  assert(hov.contents.value.includes('Pictogramme DSFR'), hov.contents.value);
+  settings.enabled = false;
+  assert.strictEqual(completionProvider.provider.provideCompletionItems(optDoc, { line: 1, character: 16 }), undefined);
+  settings.enabled = true;
+
   // Correction de tout le dossier : rien sans confirmation, puis correction et enregistrement
   modalAnswer = undefined;
   await commands['dsfrPreview.fixFrontMatterInWorkspace']();
@@ -224,5 +343,5 @@ async function lintVia(document) {
   assert.deepStrictEqual(saved.sort(), ['a.md', 'b.md']);
   fs.rmSync(tmp, { recursive: true, force: true });
 
-  console.log('Extension (VS Code simulé) : rendu, bascule, aperçu à côté, nouvelle fenêtre, en-têtes soulignés et corrigés OK');
+  console.log('Extension (VS Code simulé) : rendu, bascule, aperçu à côté, nouvelle fenêtre, blocs, en-têtes et liens soulignés, corrections à la demande, liste des problèmes, autocomplétion et survol OK');
 })().catch((e) => { console.error(e); process.exit(1); });

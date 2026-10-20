@@ -9,6 +9,7 @@ Extension VS Code qui affiche, dans l'aperçu Markdown, **le rendu exact d'une p
 alertes, accordéons, cartes, tuiles, onglets, bandeau, fil d'Ariane… avec les styles, polices et icônes
 du [Système de Design de l'État](https://www.systeme-de-design.gouv.fr/).
 
+Extension créée par **Bastien** ([@bastienR17](https://github.com/bastienR17)).
 
 | Thème clair | Thème sombre |
 |---|---|
@@ -31,12 +32,15 @@ du [Système de Design de l'État](https://www.systeme-de-design.gouv.fr/).
 - **Un rendu fidèle au site** : le HTML produit est comparé automatiquement à celui du vrai moteur
   du site (Python-Markdown + `dsfr_structure`), et les 41 exemples de la documentation officielle du thème sont testés.
   L'aperçu reproduit aussi les règles Markdown du site là où elles diffèrent de celles de VS Code.
-- **Les erreurs signalées avant la mise en ligne** : option inconnue, valeur invalide, bloc non fermé,
-  pictogramme introuvable, liste mal indentée… et les en-têtes YAML illisibles, soulignés dans l'éditeur
-  et corrigés en un clic, fichier par fichier ou pour tout le dossier.
+- **Les erreurs signalées là où on écrit** : option inconnue, valeur invalide, bloc non fermé,
+  pictogramme introuvable, liste mal indentée, en-tête YAML illisible, lien ou image introuvable…
+  affichés dans l'aperçu **et soulignés dans le Markdown**, avec une correction en un clic quand c'est possible.
+- **Autocomplétion et aide au survol** : noms de blocs, options et valeurs proposés pendant la frappe,
+  description de chaque option et lien vers la documentation du thème.
 - **Interactif** : accordéons, onglets, fil d'Ariane et sommaire cliquables ; thème clair ou sombre aligné sur VS Code.
 - **Aperçu à côté du Markdown** en un clic, ou dans une fenêtre séparée à placer sur un second écran.
-- **22 snippets** pour insérer les composants sans retenir leur syntaxe.
+  L'aperçu suit la page ouverte : changer d'onglet affiche l'autre page, avec ses accordéons tels qu'on les a laissés.
+- **23 snippets** pour insérer les composants sans retenir leur syntaxe.
 
 ![Erreurs signalées dans l'aperçu](docs/images/erreurs.png)
 
@@ -65,8 +69,38 @@ l'aperçu à droite**, et le curseur reste dans le Markdown pour continuer à é
 Pour que le bouton et **Ctrl+Alt+D** ouvrent plutôt une fenêtre séparée (pratique avec un second écran),
 régler `dsfrPreview.openMode` sur `window`. La fenêtre séparée nécessite VS Code 1.85 ou plus récent.
 
-Le rendu se met à jour pendant la saisie. L'indicateur **DSFR** de la barre d'état montre si le rendu est
-actif ; un clic l'active ou le désactive pour revenir à l'aperçu standard de VS Code.
+Le rendu se met à jour pendant la saisie, et l'aperçu suit le fichier Markdown actif : en passant d'un
+onglet à l'autre, il affiche la page correspondante. Chaque page retrouve l'état de ses accordéons et
+onglets. L'indicateur **DSFR** de la barre d'état montre si le rendu est actif ; un clic l'active ou le
+désactive pour revenir à l'aperçu standard de VS Code.
+
+### Écrire sans erreur
+
+L'extension analyse la page ouverte (et seulement elle) pendant que vous écrivez :
+
+- **Soulignements** : chaque problème affiché dans l'aperçu est aussi souligné dans le Markdown et listé
+  dans le panneau **Problèmes** (**Ctrl+Maj+M**). Rouge : le bloc s'affichera en texte brut sur le site ;
+  orange : à corriger ou rendu différent sur le site.
+- **Corrections rapides** : ampoule sur la ligne soulignée (ou **Ctrl+.**). Par exemple `type: warnig` →
+  `warning`, `open: oui` → `true`, option mal orthographiée renommée, titre ajouté à un accordéon,
+  bloc oublié fermé par `///`, classe `fr-btns-group--icon-left` ajoutée à un groupe de boutons.
+- **Localiser les problèmes** : le compteur **⚠ N DSFR** de la barre d'état (ou clic droit dans le Markdown
+  → **DSFR : Problèmes de la page**) liste les problèmes de la page avec leur ligne ; en choisir un place le
+  curseur dessus. **F8** passe aussi d'un problème au suivant. L'extension ne modifie jamais la page
+  d'elle-même : chaque correction de l'ampoule demande un clic.
+- **Dans l'aperçu**, chaque encadré d'erreur indique la ligne du fichier ; un double-clic sur l'encadré
+  place l'éditeur sur cette ligne. Quand un bloc n'est pas fermé à cause d'un « ``` » en trop, l'encadré
+  donne la ligne de ce « ``` » (elle est aussi soulignée dans l'éditeur).
+- **Structure** : un nom de bloc inconnu (`/// alrt` → `alert` ?) et un `///` qui ne ferme aucun bloc
+  sont signalés : sur le site, ces lignes s'afficheraient telles quelles.
+- **Autocomplétion** : après `/// `, la liste des blocs ; sur une ligne d'options (4 espaces sous l'en-tête),
+  les options du bloc, puis leurs valeurs (types, couleurs, pictogrammes, icônes du DSFR).
+- **Survol** d'un nom de bloc ou d'une option : description, valeurs possibles, valeur par défaut et lien
+  vers la page du composant dans la documentation du thème.
+- **Liens et images** : page `.md`, image, fichier ou ancre `#titre` introuvables. Si le dossier contient
+  le `mkdocs.yml` du site, les liens absolus (`/guides/page.md`) sont résolus depuis `docs_dir`, et une
+  syntaxe utilisée mais non activée dans `markdown_extensions` (blocs `///`, `!!!`, `???`, `{: … }`) est signalée.
+  Les adresses web et les liens vers un dossier ne sont pas vérifiés.
 
 ### Snippets
 
@@ -87,6 +121,7 @@ couleur…) se choisissent dans une liste ; **Tab** passe au champ suivant.
 | `dsfr-onglets` | Système d'onglets |
 | `dsfr-boutons`, `dsfr-bouton` | Groupe de boutons, bouton |
 | `dsfr-image`, `dsfr-video` | Contenu média |
+| `dsfr-img` | Image hébergée sur Doc SIRH : `![Description](https://docsirh.e2.rie.gouv.fr/fichiers/Dossier/image.png)` |
 | `dsfr-tableau` | Tableau avec légende |
 
 Pour que les suggestions apparaissent sans **Ctrl+Espace**, ajouter dans les réglages :
@@ -133,6 +168,7 @@ Là où les deux moteurs diffèrent, l'aperçu reproduit le comportement du site
 
 - une liste collée à un paragraphe, sans ligne vide, reste du texte ;
 - un `\` en fin de ligne reste affiché et ne crée pas de retour à la ligne ;
+- `**texte **suite` (espace avant les `**` fermantes) est en gras, comme sur le site ;
 - un contenu de liste indenté de moins de 4 espaces est signalé (sur le site, il sort de la liste) ;
 - les attributs `{: .classe }` (`attr_list`) et les listes de définitions (`def_list`) sont pris en charge.
 
@@ -167,7 +203,8 @@ le mieux est de corriger aussi ce script pour qu'il mette les valeurs entre guil
 |---|---|---|---|
 | `dsfrPreview.enabled` | `true`, `false` | `true` | Appliquer le rendu DSFR |
 | `dsfrPreview.theme` | `auto`, `light`, `dark` | `auto` | Thème DSFR (`auto` suit VS Code) |
-| `dsfrPreview.showErrors` | `true`, `false` | `true` | Afficher les encadrés d'erreur et souligner les en-têtes illisibles |
+| `dsfrPreview.showErrors` | `true`, `false` | `true` | Afficher les encadrés d'erreur dans l'aperçu et souligner les problèmes dans l'éditeur |
+| `dsfrPreview.checkLinks` | `true`, `false` | `true` | Souligner les liens, images et ancres introuvables, et les syntaxes non activées dans le `mkdocs.yml` |
 | `dsfrPreview.mkdocsCompat` | `true`, `false` | `true` | Reproduire les règles Markdown du site |
 | `dsfrPreview.openMode` | `side`, `window` | `side` | Où s'ouvre l'aperçu : à côté du Markdown ou dans une fenêtre séparée |
 
@@ -192,7 +229,9 @@ npm test
 
 Puis **F5** dans VS Code pour lancer l'extension sur les pages d'exemple.
 
-## Licence
+## Auteur et licence
 
-Code du projet sous [licence MIT](LICENSE). Les fichiers du DSFR, du thème mkdocs-dsfr et des
-bibliothèques incluses gardent leur propre licence : voir [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+Extension conçue et développée par **Bastien** ([@bastienR17](https://github.com/bastienR17)).
+
+Code du projet © 2026 Bastien (bastienR17), sous [licence MIT](LICENSE). Les fichiers du DSFR, du thème
+mkdocs-dsfr et des bibliothèques incluses gardent leur propre licence : voir [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

@@ -35,7 +35,23 @@ const unsafe = render("/// button | Clic\n    target: javascript:alert(1)\n///\n
 assert(!/javascript:/i.test(unsafe), unsafe);
 const safe = render("/// button | Lien\n    target: https://exemple.fr/page\n///\n");
 assert(safe.includes('href="https://exemple.fr/page"'), safe);
+// Guillemets dans les options texte : toujours échappés (aucun attribut HTML injecté)
+const { BLOCKS } = require('../lib/options');
+let injected = 0;
+for (const name of Object.keys(BLOCKS)) {
+  for (const key of Object.keys(BLOCKS[name].options)) {
+    if (BLOCKS[name].options[key][1].name !== 'tString') continue;
+    const head = '/// ' + name + (BLOCKS[name].arg === true ? ' | Titre' : '');
+    const html = render(head + "\n    " + key + ": 'x\" onx=\"1'\nTexte\n///\n");
+    assert(!html.includes('" onx="'), name + '.' + key + ' : ' + html);
+    injected++;
+  }
+}
+assert(injected > 20);
+// attr_list : noms d'attributs invalides et gestionnaires d'événements ignorés
+const attrHtml = render('Texte\n{: data-x="1" onclick="alert(1)" a"b=1 }\n');
+assert(attrHtml.includes('<p data-x="1">') && !attrHtml.includes('onclick') && !attrHtml.includes('a"b'), attrHtml);
 // Pas d'avertissement pour une liste correctement indentée
 const good = render("- a\n    - sous a\n\n    suite\n- b\n");
 assert(!good.includes('dsfr-preview-error'), good);
-console.log('Erreurs et mode désactivé : ' + (cases.length + 5) + ' vérifications OK');
+console.log('Erreurs et mode désactivé : ' + (cases.length + 6 + injected) + ' vérifications OK');

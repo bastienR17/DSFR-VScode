@@ -4,6 +4,8 @@ VS Code charge les scripts d'aperçu en « async » et insère le contenu de la 
 ce test reproduit ce fonctionnement et vérifie que les styles DSFR restent actifs, que l'accordéon
 s'ouvre au clic et qu'il reste ouvert après une mise à jour de l'aperçu, puis que les styles
 sont bien coupés quand le rendu DSFR est désactivé.
+Il vérifie aussi le passage d'un fichier à l'autre : VS Code recharge alors tout l'aperçu, et chaque
+page doit retrouver ses propres accordéons (ouverts sur une page, fermés sur une autre).
 L'extension est servie sous un nom de dossier quelconque (« un-clone ») : la détection des
 feuilles de style ne doit pas dépendre du nom du dossier d'installation.
 Prérequis : pip install playwright && playwright install chromium
@@ -20,7 +22,10 @@ body = '<div id="dsfr-preview-state" data-enabled="true" data-theme="auto" hidde
 attr = body.replace('&', '&amp;').replace('"', '&quot;')
 links = ''.join(f'<link rel="stylesheet" href="/un-clone/media/{p}">' for p in
                 ['dsfr/dsfr.min.css', 'dsfr/utility/utility.min.css', 'dsfr/css/theme.css', 'dsfr-preview.css'])
-page = f"""<!DOCTYPE html><html><head><meta charset="utf-8">{links}<meta id="data" data-c="{attr}"></head>
+def page(source):
+    settings = json.dumps({'source': source}).replace('"', '&quot;')
+    return f"""<!DOCTYPE html><html><head><meta charset="utf-8">{links}<meta id="data" data-c="{attr}">
+<meta id="vscode-markdown-preview-data" data-settings="{settings}" data-state="{{}}"></head>
 <body class="vscode-body vscode-light"><script async src="/un-clone/media/dsfr-preview.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => setTimeout(() => {{
@@ -44,8 +49,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return os.path.join(ROOT, path[len('/un-clone/'):].split('?')[0])
         return super().translate_path(path)
     def do_GET(self):
-        if self.path == '/':
-            data = page.encode('utf8')
+        if self.path.startswith('/page/'):
+            data = page('file:///docs/' + self.path[len('/page/'):]).encode('utf8')
             self.send_response(200); self.send_header('Content-Type', 'text/html; charset=utf-8')
             self.send_header('Content-Length', str(len(data))); self.end_headers(); self.wfile.write(data)
         else:
@@ -55,7 +60,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Handler)
 threading.Thread(target=server.serve_forever, daemon=True).start()
-url = f'http://127.0.0.1:{server.server_address[1]}/'
+base = f'http://127.0.0.1:{server.server_address[1]}/page/'
+url = base + 'a.md'
 with sync_playwright() as p:
     b = p.chromium.launch()
     pg = b.new_page()
@@ -67,9 +73,19 @@ with sync_playwright() as p:
     assert pg.evaluate("document.querySelector('.fr-collapse').classList.contains('fr-collapse--expanded')"), 'accordéon fermé après clic'
     pg.evaluate('simulateUpdate()'); pg.wait_for_timeout(200)
     assert pg.evaluate("document.querySelector('.fr-collapse').classList.contains('fr-collapse--expanded')"), 'accordéon refermé après mise à jour'
+    expanded = "document.querySelector('.fr-collapse').classList.contains('fr-collapse--expanded')"
+    # Changement de fichier : VS Code recharge l'aperçu sur l'autre page
+    pg.goto(base + 'b.md'); pg.wait_for_timeout(600)
+    assert not pg.evaluate(expanded), "l'accordéon ouvert sur a.md est ouvert sur b.md"
+    pg.goto(base + 'a.md'); pg.wait_for_timeout(600)
+    assert pg.evaluate(expanded), "a.md n'a pas retrouvé son accordéon ouvert"
+    pg.click('.fr-accordion__btn'); pg.wait_for_timeout(200)
+    pg.goto(base + 'b.md'); pg.wait_for_timeout(600)
+    pg.goto(base + 'a.md'); pg.wait_for_timeout(600)
+    assert not pg.evaluate(expanded), "l'accordéon refermé sur a.md s'est rouvert"
     pg.evaluate('disableDsfr()'); pg.wait_for_timeout(200)
     assert pg.evaluate("[...document.querySelectorAll('link')].every(l => l.disabled)"), 'styles DSFR toujours actifs une fois le rendu coupé'
     assert not pg.evaluate("document.documentElement.hasAttribute('data-fr-theme')"), 'thème DSFR toujours appliqué'
     b.close()
 server.shutdown()
-print('Aperçu (navigateur, comportement VS Code) : styles actifs puis coupés, accordéon cliquable et conservé OK')
+print('Aperçu (navigateur, comportement VS Code) : styles actifs puis coupés, accordéon cliquable, conservé et propre à chaque page OK')

@@ -28,3 +28,9 @@ js-yaml 4.3.2, licence MIT ([texte](lib/vendor/LICENSE-js-yaml.txt)).
 ## markdown-it-deflist — `lib/vendor/markdown-it-deflist.js`
 
 markdown-it-deflist 3.0.1, licence MIT ([texte](lib/vendor/LICENSE-markdown-it-deflist.txt)).
+
+## markdown-it — `lib/vendor/markdown-it.min.js`
+
+markdown-it 14.3.2, licence MIT ([texte](lib/vendor/LICENSE-markdown-it.txt)).
+Même moteur que l'aperçu de VS Code : il sert à analyser la page ouverte pour souligner
+ses problèmes dans l'éditeur.

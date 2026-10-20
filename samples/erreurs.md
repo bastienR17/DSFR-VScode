@@ -57,6 +57,22 @@ Ici, le paragraphe est directement suivi d'une liste :
 - sur le site comme dans l'aperçu, ces lignes restent du texte ;
 - il faut une ligne vide avant la liste.
 
+## Nom de bloc inconnu
+
+/// alrt | Faute de frappe
+Sur le site, ces lignes s'affichent telles quelles : « alrt » n'est pas un bloc DSFR.
+///
+
+## Fermeture en trop
+
+/// alert | Bloc correct
+Ce bloc est bien fermé…
+///
+
+… mais ce « /// » ne ferme rien :
+
+///
+
 ## Bloc non fermé
 
 /// alert | Fermeture oubliée

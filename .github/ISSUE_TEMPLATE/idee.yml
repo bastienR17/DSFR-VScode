@@ -1,0 +1,16 @@
+name: Idée ou amélioration
+description: Proposer une fonctionnalité ou une amélioration.
+labels: [idée]
+body:
+  - type: textarea
+    id: besoin
+    attributes:
+      label: Besoin
+      description: Ce que vous cherchez à faire, et ce qui vous gêne aujourd'hui.
+    validations:
+      required: true
+  - type: textarea
+    id: proposition
+    attributes:
+      label: Proposition
+      description: Comment l'extension pourrait vous aider (facultatif).

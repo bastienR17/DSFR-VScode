@@ -2,10 +2,11 @@
   "name": "dsfr-markdown-preview",
   "displayName": "Aperçu DSFR pour Markdown (MkDocs DSFR)",
   "description": "Affiche dans l'aperçu Markdown de VS Code le rendu DSFR des pages MkDocs DSFR : blocs dsfr_structure (alertes, accordéons, cartes, tuiles, onglets…) et composants de l'en-tête (bandeau, fil d'Ariane, sommaire).",
-  "version": "0.8.1",
+  "version": "0.9.2",
   "publisher": "dsnumrh4",
   "author": {
-    "name": "Les contributeurs de dsfr-markdown-preview"
+    "name": "Bastien (bastienR17)",
+    "url": "https://github.com/bastienR17"
   },
   "license": "MIT",
   "repository": {
@@ -75,6 +76,12 @@
         "icon": "$(multiple-windows)"
       },
       {
+        "command": "dsfrPreview.listProblems",
+        "title": "Problèmes de la page",
+        "category": "DSFR",
+        "icon": "$(list-flat)"
+      },
+      {
         "command": "dsfrPreview.fixFrontMatterInWorkspace",
         "title": "Corriger les en-têtes YAML des fichiers Markdown",
         "category": "DSFR"
@@ -111,7 +118,12 @@
         "dsfrPreview.showErrors": {
           "type": "boolean",
           "default": true,
-          "description": "Signaler les erreurs d'écriture : encadrés dans l'aperçu (bloc DSFR invalide, bloc non fermé, pictogramme introuvable…) et soulignement des en-têtes YAML illisibles dans l'éditeur."
+          "description": "Signaler les erreurs d'écriture : encadrés dans l'aperçu (bloc DSFR invalide, bloc non fermé, pictogramme introuvable…) et soulignement dans l'éditeur, avec corrections rapides."
+        },
+        "dsfrPreview.checkLinks": {
+          "type": "boolean",
+          "default": true,
+          "description": "Souligner dans l'éditeur les liens, images et ancres introuvables de la page ouverte, et, si le dossier contient un mkdocs.yml, les syntaxes non activées dans markdown_extensions."
         },
         "dsfrPreview.mkdocsCompat": {
           "type": "boolean",
@@ -139,6 +151,13 @@
           "command": "dsfrPreview.open",
           "when": "editorLangId == markdown && !notebookEditorFocused",
           "group": "navigation@-10"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "dsfrPreview.listProblems",
+          "when": "editorLangId == markdown",
+          "group": "navigation@9"
         }
       ],
       "explorer/context": [
@@ -179,6 +198,10 @@
           "when": "editorLangId == markdown"
         },
         {
+          "command": "dsfrPreview.listProblems",
+          "when": "editorLangId == markdown"
+        },
+        {
           "command": "dsfrPreview.fixFrontMatterInWorkspace",
           "when": "workspaceFolderCount > 0"
         }
@@ -195,7 +218,7 @@
   },
   "scripts": {
     "test": "npm run test:js && npm run test:python",
-    "test:js": "node test/errors.js && node test/snippets.js && node test/frontmatter.js && node test/frontmatter-fix.js && node test/samples.js && node test/extension-host.js",
+    "test:js": "node test/errors.js && node test/snippets.js && node test/frontmatter.js && node test/frontmatter-fix.js && node test/lint.js && node test/assist.js && node test/links.js && node test/samples.js && node test/extension-host.js",
     "test:python": "cd test && python3 compare.py && python3 doc_check.py && python3 frontmatter_mkdocs.py",
     "test:browser": "cd test && python3 preview_browser.py",
     "package": "vsce package"

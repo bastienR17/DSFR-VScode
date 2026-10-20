@@ -62,5 +62,6 @@
 "Un paragraphe\n{: .fr-text--lead }\n",
 "Un [lien](https://x.fr){: target=_blank } dans le texte\n",
 "Terme\n:   Sa définition\n\nAutre terme\n:   Autre définition\n",
-"Texte **gras**{: .fr-text--bold } ici\n"
+"Texte **gras**{: .fr-text--bold } ici\n",
+"Comme tout outil, l'assistant a des **limites **à garder en tête.\n\na **b **c **d **e et **normal** ok\n\n- **item **suite\n\n/// alert | T\nUn **mot **collé\n///\n"
 ]
