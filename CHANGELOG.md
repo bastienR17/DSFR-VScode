@@ -2,6 +2,16 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## 0.9.4 — octobre 2026
+
+### Corrections
+- Intégration continue : le test de parité échouait depuis la sortie de Python-Markdown 3.11.1, qui
+  n'affiche plus en gras `**limites **à` (espace avant les `**` fermantes), alors que les versions
+  précédentes le faisaient.
+- Ce cas n'est donc plus rendu en gras dans l'aperçu (comme les versions récentes du site) : il est
+  signalé (« Gras mal fermé »), avec une correction proposée dans l'ampoule, `**limites** à`, dont le
+  rendu est le même quelle que soit la version.
+
 ## 0.9.3 — octobre 2026
 
 ### Modifications

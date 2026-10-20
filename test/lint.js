@@ -163,6 +163,15 @@ const sample = (f) => fs.readFileSync(path.join(__dirname, '..', 'samples', f), 
 assert.deepStrictEqual(lint(sample('demo.md')), []);
 assert.strictEqual(lint(sample('erreurs.md')).length, 9);
 
+// Gras mal fermé (« **limites **à ») : rendu qui dépend de la version de Python-Markdown du site
+src = 'Il a des **limites **à garder, et du **gras** normal.\n';
+issue = only(src);
+assert.strictEqual(issue.code, 'dsfr-loose-strong');
+assert.strictEqual(word(src, issue), '**limites **');
+assert.strictEqual(fixed(src, issue), 'Il a des **limites** à garder, et du **gras** normal.\n');
+clean(fixed(src, issue));
+clean('Un ** espace ** autour : non signalé.\n');
+
 // Fins de ligne Windows
 src = '/// alert | Titre\r\n    type: warnig\r\nTexte\r\n///\r\n';
 issue = only(src);

@@ -168,7 +168,8 @@ Là où les deux moteurs diffèrent, l'aperçu reproduit le comportement du site
 
 - une liste collée à un paragraphe, sans ligne vide, reste du texte ;
 - un `\` en fin de ligne reste affiché et ne crée pas de retour à la ligne ;
-- `**texte **suite` (espace avant les `**` fermantes) est en gras, comme sur le site ;
+- `**texte **suite` (espace avant les `**` fermantes) est signalé : selon la version de Python-Markdown du site,
+  il est en gras (jusqu'à 3.11.0) ou affiché avec les `**` (3.11.1 et après). Écrire `**texte** suite` ;
 - un contenu de liste indenté de moins de 4 espaces est signalé (sur le site, il sort de la liste) ;
 - les attributs `{: .classe }` (`attr_list`) et les listes de définitions (`def_list`) sont pris en charge.
 
