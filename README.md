@@ -121,7 +121,7 @@ couleur…) se choisissent dans une liste ; **Tab** passe au champ suivant.
 | `dsfr-onglets` | Système d'onglets |
 | `dsfr-boutons`, `dsfr-bouton` | Groupe de boutons, bouton |
 | `dsfr-image`, `dsfr-video` | Contenu média |
-| `dsfr-img` | Image hébergée sur Doc SIRH : `![Description](https://docsirh.e2.rie.gouv.fr/fichiers/Dossier/image.png)` |
+| `dsfr-img` | Image hébergée sur Doc SIRH : insère `![](https://docsirh.e2.rie.gouv.fr/fichiers/)`, curseur après `fichiers/` pour compléter le chemin, puis **Tab** pour la description |
 | `dsfr-tableau` | Tableau avec légende |
 
 Pour que les suggestions apparaissent sans **Ctrl+Espace**, ajouter dans les réglages :

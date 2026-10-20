@@ -2,6 +2,13 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## 0.9.3 — octobre 2026
+
+### Modifications
+- Snippet `dsfr-img` : insère seulement `![](https://docsirh.e2.rie.gouv.fr/fichiers/)`, sans dossier ni nom de
+  fichier d'exemple. Le curseur se place après `fichiers/` pour compléter le chemin ; **Tab** passe ensuite à la
+  description de l'image entre crochets.
+
 ## 0.9.2 — octobre 2026
 
 Localiser les problèmes, sans jamais modifier la page à la place de l'auteur.

@@ -13,7 +13,11 @@ for (const [name, s] of Object.entries(snippets)) {
   const html = createMd({ showErrors: () => true }).render(full, {});
   assert(!html.includes('dsfr-preview-error'), 'Snippet « ' + name + ' » invalide :\n' + src + '\n' + html);
   // Un composant DSFR produit des classes fr-* ; une simple image Markdown (dsfr-img), non.
-  if (src.startsWith('![')) assert(/<img src="https:\/\/docsirh\.e2\.rie\.gouv\.fr\/fichiers\/[^"]+" alt="[^"]+">/.test(html), 'Snippet « ' + name + ' » : image attendue :\n' + html);
+  if (src.startsWith('![')) {
+    // dsfr-img : seulement le début de l'adresse, le reste est complété par le rédacteur
+    assert.strictEqual(src, '![](https://docsirh.e2.rie.gouv.fr/fichiers/)');
+    assert(/<img src="https:\/\/docsirh\.e2\.rie\.gouv\.fr\/fichiers\/" alt="">/.test(html), 'Snippet « ' + name + ' » : image attendue :\n' + html);
+  }
   else assert(/class="fr-/.test(html), 'Snippet « ' + name + ' » sans classe DSFR :\n' + html);
   n++;
 }

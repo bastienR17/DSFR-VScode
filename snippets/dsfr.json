@@ -303,9 +303,9 @@
       "dsfr-img"
     ],
     "body": [
-      "![${1:Description de l'image}](https://docsirh.e2.rie.gouv.fr/fichiers/${2:Dossier}/${3:image.png})$0"
+      "![$2](https://docsirh.e2.rie.gouv.fr/fichiers/$1)$0"
     ],
-    "description": "Image hébergée dans les fichiers de Doc SIRH (https://docsirh.e2.rie.gouv.fr/fichiers/). Le texte entre crochets décrit l'image pour les lecteurs d'écran."
+    "description": "Image hébergée dans les fichiers de Doc SIRH : le curseur se place après « fichiers/ » pour compléter le chemin, puis Tab passe à la description de l'image (lue par les lecteurs d'écran)."
   },
   "Vidéo DSFR": {
     "prefix": [
