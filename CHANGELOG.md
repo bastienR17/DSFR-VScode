@@ -2,6 +2,18 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## 0.9.5 — octobre 2026
+
+### Modifications
+- **Snippets sans Ctrl+Espace** : taper `dsfr-` ouvre directement la liste des composants. Ctrl+Espace
+  n'est plus nécessaire (sur Mac, ce raccourci change la langue du clavier et n'arrivait pas à VS Code ;
+  sur certains PC, il est pris par un autre logiciel). La liste ne s'ouvre que sur `dsfr-`, jamais
+  pendant l'écriture du texte.
+
+### Ajouts
+- Snippets `dsfr-tuile-2` et `dsfr-tuile-3` : 2 ou 3 tuiles côte à côte dans une grille (l'une sous
+  l'autre sur mobile). Taper `dsfr-tuile` propose les trois : une tuile seule, 2 ou 3 tuiles.
+
 ## 0.9.4 — octobre 2026
 
 ### Corrections

@@ -124,8 +124,8 @@ version, mettre à jour `requirements-dev.txt`, relancer `npm test` et reporter 
 2. Si le rendu a changé, régénérer les captures : `python3 scripts/captures.py`.
 3. Créer et pousser une étiquette :
    ```bash
-   git tag v0.9.4
-   git push origin v0.9.4
+   git tag v0.9.5
+   git push origin v0.9.5
    ```
 4. La CI teste, construit le `.vsix` et le joint à une Release GitHub.
 

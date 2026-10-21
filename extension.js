@@ -436,17 +436,24 @@ const COMPLETION_KIND = () => ({
   block: vscode.CompletionItemKind.Module,
   option: vscode.CompletionItemKind.Property,
   value: vscode.CompletionItemKind.Value,
+  snippet: vscode.CompletionItemKind.Snippet,
 });
 
 function createAssistProviders(context) {
   const media = (...p) => context.asAbsolutePath(path.join('media', 'dsfr', ...p));
-  const assets = { artworkDir: media('artwork', 'pictograms'), cssFiles: [media('dsfr.min.css'), media('utility', 'utility.min.css')] };
+  const assets = {
+    artworkDir: media('artwork', 'pictograms'),
+    cssFiles: [media('dsfr.min.css'), media('utility', 'utility.min.css')],
+    snippets: require('./snippets/dsfr.json'),
+  };
   const linesOf = (document) => document.getText().split('\n').map((l) => l.replace(/\r$/, ''));
 
   const completion = {
-    provideCompletionItems(document, position) {
+    provideCompletionItems(document, position, token, context) {
       if (!isEnabled()) return undefined;
-      const r = assist.completions(linesOf(document), position.line, position.character, assets);
+      // Ctrl+Espace : VS Code propose déjà les snippets « dsfr- » ; on ne les ajoute qu'à la frappe du « - ».
+      const invoked = !!context && context.triggerKind === vscode.CompletionTriggerKind.Invoke;
+      const r = assist.completions(linesOf(document), position.line, position.character, assets, { snippets: !invoked });
       if (!r) return undefined;
       const range = new vscode.Range(position.line, r.from, position.line, position.character);
       return r.items.map((it, i) => {
@@ -456,6 +463,7 @@ function createAssistProviders(context) {
         item.sortText = String(i).padStart(4, '0'); // ordre de options.js (le plus courant d'abord)
         if (it.detail) item.detail = it.detail;
         if (it.documentation) item.documentation = new vscode.MarkdownString(it.documentation);
+        if (it.filterText) item.filterText = it.filterText;
         if (it.retrigger) item.command = { command: 'editor.action.triggerSuggest', title: 'Valeurs possibles' };
         return item;
       });
@@ -509,7 +517,7 @@ function activate(context) {
     vscode.languages.registerCodeActionsProvider({ language: 'markdown' }, codeActionProvider, {
       providedCodeActionKinds: [vscode.CodeActionKind.QuickFix],
     }),
-    vscode.languages.registerCompletionItemProvider({ language: 'markdown' }, providers.completion, '/', ' ', ':'),
+    vscode.languages.registerCompletionItemProvider({ language: 'markdown' }, providers.completion, '/', ' ', ':', '-'),
     vscode.languages.registerHoverProvider({ language: 'markdown' }, providers.hover),
     vscode.workspace.onDidOpenTextDocument(lintDocument),
     vscode.workspace.onDidChangeTextDocument((e) => scheduleLint(e.document)),

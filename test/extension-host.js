@@ -134,7 +134,8 @@ const vscode = {
     onDidChangeDiagnostics: (fn) => { diagnosticsListener = fn; return { dispose() {} }; },
   },
   CompletionItem: class { constructor(label, kind) { Object.assign(this, { label, kind }); } },
-  CompletionItemKind: { Module: 8, Property: 9, Value: 11 },
+  CompletionItemKind: { Module: 8, Property: 9, Value: 11, Snippet: 27 },
+  CompletionTriggerKind: { Invoke: 0, TriggerCharacter: 1, TriggerForIncompleteCompletions: 2 },
   SnippetString: class { constructor(value) { this.value = value; } },
   MarkdownString: class { constructor(value) { this.value = value; } },
   Hover: class { constructor(contents, range) { Object.assign(this, { contents, range }); } },
@@ -318,7 +319,13 @@ async function lintVia(document) {
   vscode.window.activeTextEditor = null;
 
   // Autocomplétion et survol branchés sur l'éditeur
-  assert.deepStrictEqual(completionProvider.triggers, ['/', ' ', ':']);
+  assert.deepStrictEqual(completionProvider.triggers, ['/', ' ', ':', '-']);
+  // « dsfr- » : la liste des snippets s'ouvre à la frappe du « - », pas en double sur Ctrl+Espace
+  const snipDoc = textDocument(new Uri('/tmp/other/snip.md'), 'dsfr-');
+  const snipItems = completionProvider.provider.provideCompletionItems(snipDoc, { line: 0, character: 5 }, null, { triggerKind: 1, triggerCharacter: '-' });
+  assert(snipItems.length > 20 && snipItems.every((i) => i.kind === vscode.CompletionItemKind.Snippet));
+  assert.strictEqual(snipItems.find((i) => i.label === 'dsfr-img').insertText.value, '![$2](https://docsirh.e2.rie.gouv.fr/fichiers/$1)$0');
+  assert.strictEqual(completionProvider.provider.provideCompletionItems(snipDoc, { line: 0, character: 5 }, null, { triggerKind: 0 }), undefined);
   const optDoc = textDocument(new Uri('/tmp/other/opts.md'), '/// tile | Titre\n    picto: build\n');
   const items = completionProvider.provider.provideCompletionItems(optDoc, { line: 1, character: 16 });
   assert(items.length > 10 && items.every((i) => i.range.sc === 11), 'valeurs de picto, remplacement de « build »');

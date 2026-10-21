@@ -4,7 +4,11 @@ const path = require('path');
 const { completions, hover } = require('../lib/assist');
 
 const media = path.join(__dirname, '..', 'media', 'dsfr');
-const assets = { artworkDir: path.join(media, 'artwork', 'pictograms'), cssFiles: [path.join(media, 'dsfr.min.css'), path.join(media, 'utility', 'utility.min.css')] };
+const assets = {
+  artworkDir: path.join(media, 'artwork', 'pictograms'),
+  cssFiles: [path.join(media, 'dsfr.min.css'), path.join(media, 'utility', 'utility.min.css')],
+  snippets: require('../snippets/dsfr.json'),
+};
 // Le curseur est marqué par « ¦ » dans le texte
 function at(text) {
   const lines = text.split('\n');
@@ -19,8 +23,24 @@ const complete = (text) => {
 };
 const labels = (r) => r.items.map((i) => i.label);
 
+// Snippets : « dsfr- » ouvre la liste sans Ctrl+Espace
+let r = complete('Voir ci-dessous :\n\ndsfr-¦');
+const snippetCount = Object.keys(assets.snippets).length;
+assert.strictEqual(r.items.length, snippetCount);
+assert.strictEqual(r.from, 0);
+const alerte = r.items.find((i) => i.label === 'dsfr-alerte');
+assert(alerte && alerte.kind === 'snippet' && alerte.snippet && alerte.insertText.startsWith("/// alert | ${1:Titre de l'alerte}"), JSON.stringify(alerte));
+assert(alerte.filterText.includes('dsfr-alert'), 'les alias anglais filtrent aussi');
+assert(r.items.some((i) => i.label === 'dsfr-img'));
+r = complete('Texte dsfr-acc¦');
+assert.strictEqual(r.from, 6);
+assert.strictEqual(complete('mot-dsfr-¦'), null, 'pas au milieu d\'un mot');
+assert.strictEqual(complete('- liste¦'), null);
+const p = at('dsfr-¦');
+assert.strictEqual(completions(p.lines, p.line, p.character, assets, { snippets: false }), null, 'Ctrl+Espace : VS Code les propose déjà');
+
 // Noms de blocs
-let r = complete('Texte\n\n/// ¦');
+r = complete('Texte\n\n/// ¦');
 assert.strictEqual(labels(r).length, 15);
 assert(labels(r).includes('accordion') && labels(r).includes('tile'));
 const acc = r.items.find((i) => i.label === 'accordion');

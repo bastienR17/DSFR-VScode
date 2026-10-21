@@ -40,7 +40,7 @@ Extension créée par **Bastien** ([@bastienR17](https://github.com/bastienR17))
 - **Interactif** : accordéons, onglets, fil d'Ariane et sommaire cliquables ; thème clair ou sombre aligné sur VS Code.
 - **Aperçu à côté du Markdown** en un clic, ou dans une fenêtre séparée à placer sur un second écran.
   L'aperçu suit la page ouverte : changer d'onglet affiche l'autre page, avec ses accordéons tels qu'on les a laissés.
-- **23 snippets** pour insérer les composants sans retenir leur syntaxe.
+- **25 snippets** pour insérer les composants sans retenir leur syntaxe.
 
 ![Erreurs signalées dans l'aperçu](docs/images/erreurs.png)
 
@@ -104,8 +104,9 @@ L'extension analyse la page ouverte (et seulement elle) pendant que vous écrive
 
 ### Snippets
 
-Dans un fichier Markdown, taper `dsfr-` puis **Ctrl+Espace**. Les valeurs possibles (type d'alerte,
-couleur…) se choisissent dans une liste ; **Tab** passe au champ suivant.
+Dans un fichier Markdown, taper `dsfr-` : la liste des composants s'ouvre toute seule, sans **Ctrl+Espace**.
+Continuer à taper filtre la liste (`dsfr-acc` → accordéon), **Entrée** insère le composant. Les valeurs
+possibles (type d'alerte, couleur…) se choisissent ensuite dans une liste ; **Tab** passe au champ suivant.
 
 | Raccourci | Composant |
 |---|---|
@@ -117,6 +118,7 @@ couleur…) se choisissent dans une liste ; **Tab** passe au champ suivant.
 | `dsfr-mise-en-avant` | Mise en avant (callout) |
 | `dsfr-citation`, `dsfr-exergue` | Citation, mise en exergue |
 | `dsfr-carte`, `dsfr-tuile` | Carte, tuile |
+| `dsfr-tuile-2`, `dsfr-tuile-3` | 2 ou 3 tuiles côte à côte (l'une sous l'autre sur mobile) |
 | `dsfr-grille` | Ligne de grille à deux colonnes |
 | `dsfr-onglets` | Système d'onglets |
 | `dsfr-boutons`, `dsfr-bouton` | Groupe de boutons, bouton |
@@ -124,11 +126,8 @@ couleur…) se choisissent dans une liste ; **Tab** passe au champ suivant.
 | `dsfr-img` | Image hébergée sur Doc SIRH : insère `![](https://docsirh.e2.rie.gouv.fr/fichiers/)`, curseur après `fichiers/` pour compléter le chemin, puis **Tab** pour la description |
 | `dsfr-tableau` | Tableau avec légende |
 
-Pour que les suggestions apparaissent sans **Ctrl+Espace**, ajouter dans les réglages :
-
-```json
-"[markdown]": { "editor.quickSuggestions": { "other": "on" } }
-```
+Sur Mac, **Ctrl+Espace** sert par défaut à changer la langue du clavier : inutile ici, la frappe de
+`dsfr-` suffit.
 
 ## Syntaxe en bref
 

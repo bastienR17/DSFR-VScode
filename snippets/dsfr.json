@@ -203,12 +203,73 @@
       "dsfr-tuile",
       "dsfr-tile"
     ],
-    "description": "Tuile DSFR avec pictogramme",
+    "description": "Une tuile DSFR avec pictogramme (dsfr-tuile-2 ou dsfr-tuile-3 : plusieurs tuiles côte à côte)",
     "body": [
       "/// tile | ${1:Titre de la tuile}",
       "    description: ${2:Description}",
       "    target: ${3:page.md}",
       "    picto: ${4|document/document,buildings/city-hall,digital/mail-send,system/information,institutions/money|}",
+      "///",
+      "$0"
+    ]
+  },
+  "2 tuiles côte à côte": {
+    "prefix": [
+      "dsfr-tuile-2",
+      "dsfr-tuiles-2",
+      "dsfr-tile-2"
+    ],
+    "description": "Deux tuiles DSFR côte à côte (grille de 2 colonnes, l'une sous l'autre sur mobile)",
+    "body": [
+      "/// row | fr-grid-row--gutters",
+      "/// col | 12 md-6",
+      "/// tile | ${1:Titre de la tuile 1}",
+      "    description: ${2:Description}",
+      "    target: ${3:page.md}",
+      "    picto: ${4|document/document,buildings/city-hall,digital/mail-send,system/information,institutions/money|}",
+      "///",
+      "///",
+      "/// col | 12 md-6",
+      "/// tile | ${5:Titre de la tuile 2}",
+      "    description: ${6:Description}",
+      "    target: ${7:page.md}",
+      "    picto: ${8|document/document,buildings/city-hall,digital/mail-send,system/information,institutions/money|}",
+      "///",
+      "///",
+      "///",
+      "$0"
+    ]
+  },
+  "3 tuiles côte à côte": {
+    "prefix": [
+      "dsfr-tuile-3",
+      "dsfr-tuiles-3",
+      "dsfr-tile-3"
+    ],
+    "description": "Trois tuiles DSFR côte à côte (grille de 3 colonnes, l'une sous l'autre sur mobile)",
+    "body": [
+      "/// row | fr-grid-row--gutters",
+      "/// col | 12 md-4",
+      "/// tile | ${1:Titre de la tuile 1}",
+      "    description: ${2:Description}",
+      "    target: ${3:page.md}",
+      "    picto: ${4|document/document,buildings/city-hall,digital/mail-send,system/information,institutions/money|}",
+      "///",
+      "///",
+      "/// col | 12 md-4",
+      "/// tile | ${5:Titre de la tuile 2}",
+      "    description: ${6:Description}",
+      "    target: ${7:page.md}",
+      "    picto: ${8|document/document,buildings/city-hall,digital/mail-send,system/information,institutions/money|}",
+      "///",
+      "///",
+      "/// col | 12 md-4",
+      "/// tile | ${9:Titre de la tuile 3}",
+      "    description: ${10:Description}",
+      "    target: ${11:page.md}",
+      "    picto: ${12|document/document,buildings/city-hall,digital/mail-send,system/information,institutions/money|}",
+      "///",
+      "///",
       "///",
       "$0"
     ]
