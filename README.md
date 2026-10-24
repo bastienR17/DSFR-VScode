@@ -40,7 +40,7 @@ Extension créée par **Bastien** ([@bastienR17](https://github.com/bastienR17))
 - **Interactif** : accordéons, onglets, fil d'Ariane et sommaire cliquables ; thème clair ou sombre aligné sur VS Code.
 - **Aperçu à côté du Markdown** en un clic, ou dans une fenêtre séparée à placer sur un second écran.
   L'aperçu suit la page ouverte : changer d'onglet affiche l'autre page, avec ses accordéons tels qu'on les a laissés.
-- **25 snippets** pour insérer les composants sans retenir leur syntaxe.
+- **38 snippets**, dont 13 propres à Doc SIRH, pour insérer les composants sans retenir leur syntaxe.
 
 ![Erreurs signalées dans l'aperçu](docs/images/erreurs.png)
 
@@ -125,6 +125,26 @@ possibles (type d'alerte, couleur…) se choisissent ensuite dans une liste ; **
 | `dsfr-image`, `dsfr-video` | Contenu média |
 | `dsfr-img` | Image hébergée sur Doc SIRH : insère `![](https://docsirh.e2.rie.gouv.fr/fichiers/)`, curseur après `fichiers/` pour compléter le chemin, puis **Tab** pour la description |
 | `dsfr-tableau` | Tableau avec légende |
+
+#### Snippets Doc SIRH
+
+Les blocs tels que l'équipe DSNUMRH4 les écrit dans Doc SIRH. Taper `dsfr-sirh` pour n'afficher qu'eux.
+
+| Raccourci | Insère |
+|---|---|
+| `dsfr-sirh-modop` | Page de mode opératoire complète : titre, fil d'Ariane, suivi des modifications, documents de référence, contexte |
+| `dsfr-sirh-rubrique` | Page de rubrique : fil d'Ariane, titre et une ligne de 3 cartes vers les modes opératoires |
+| `dsfr-sirh-fil-ariane` | Fil d'Ariane en HTML (Accueil, rubrique, sous-rubrique, page courante) |
+| `dsfr-sirh-fil-ariane-niveau` | Un niveau de plus dans le fil d'Ariane |
+| `dsfr-sirh-suivi` | Accordéon « Suivi des modifications » avec son tableau |
+| `dsfr-sirh-version` | Nouvelle ligne du suivi des modifications, datée du jour automatiquement |
+| `dsfr-sirh-docs-ref` | Tableau « Documents de référence » |
+| `dsfr-sirh-chemin` | Chemin dans l'application : `⮡ Domaine` › `⮡ Thème` › `⮡ Action fonctionnelle` |
+| `dsfr-sirh-capture` | Capture d'écran hébergée dans `fichiers/`, avec sa description et sa largeur |
+| `dsfr-sirh-consigne` | Encadré de consigne : alerte sans titre, texte en italique |
+| `dsfr-sirh-cartes-3` | Ligne de 3 cartes (l'image n'est saisie qu'une fois pour les trois) |
+| `dsfr-sirh-carte` | Une carte à ajouter dans une ligne |
+| `dsfr-sirh-carte-fichier` | Carte vers un fichier (Excel, PDF…) avec sa date de version |
 
 Sur Mac, **Ctrl+Espace** sert par défaut à changer la langue du clavier : inutile ici, la frappe de
 `dsfr-` suffit.

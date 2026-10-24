@@ -395,5 +395,307 @@
       "[${5:Légende du tableau}]",
       "$0"
     ]
+  },
+  "Doc SIRH : page de mode opératoire": {
+    "prefix": [
+      "dsfr-sirh-modop"
+    ],
+    "description": "Doc SIRH — squelette d'un MODOP : titre, fil d'Ariane, suivi des modifications, documents de référence, contexte",
+    "body": [
+      "---",
+      "title: '${1:Titre du mode opératoire}'",
+      "---",
+      "",
+      "<nav role=\"navigation\" class=\"fr-breadcrumb\" aria-label=\"vous êtes ici :\">",
+      "    <button class=\"fr-breadcrumb__button\" aria-expanded=\"false\" aria-controls=\"breadcrumb-1\">Voir le fil d’Ariane</button>",
+      "    <div class=\"fr-collapse\" id=\"breadcrumb-1\">",
+      "        <ol class=\"fr-breadcrumb__list\">",
+      "            <li>",
+      "                <a class=\"fr-breadcrumb__link\" href=\"/\">Accueil</a>",
+      "            </li>",
+      "            <li>",
+      "                <a class=\"fr-breadcrumb__link\" href=\"/${2:GA-PAYE}/\">${3:GA PAYE}</a>",
+      "            </li>",
+      "            <li>",
+      "                <a class=\"fr-breadcrumb__link\" href=\"/${2}/${4:RenoiRH-GA-PAYE}/\">${5:RenoiRH GA PAYE}</a>",
+      "            </li>",
+      "            <li>",
+      "                <a class=\"fr-breadcrumb__link\" aria-current=\"page\">${1}</a>",
+      "            </li>",
+      "        </ol>",
+      "    </div>",
+      "</nav>",
+      "",
+      "# ${1}",
+      "",
+      "/// accordion | **Suivi des modifications**",
+      "",
+      "| **Version** | **Date** | **Emetteur** | **Suivi des modifications** |",
+      "|----|----|----|----|",
+      "| V${6:1} | $CURRENT_DATE/$CURRENT_MONTH/$CURRENT_YEAR | ${7:MATTE / DSNUMRH4} | ${8:Création} |",
+      "",
+      "///",
+      "",
+      "**Documents de référence**",
+      "",
+      "| **Type du document** | **Origine** | **Nom du document** | **Date** |",
+      "|----|----|----|----|",
+      "| ${9:Décret} | ${10} | ${11:Intitulé du document} | ${12:JJ/MM/AAAA} |",
+      "",
+      "## Contexte",
+      "",
+      "${13:Texte de contexte.}",
+      "",
+      "## ${14:Titre de la première partie}",
+      "",
+      "$0"
+    ]
+  },
+  "Doc SIRH : page de rubrique (cartes)": {
+    "prefix": [
+      "dsfr-sirh-rubrique"
+    ],
+    "description": "Doc SIRH — page de redirection : fil d'Ariane, titre et une ligne de 3 cartes vers les modes opératoires",
+    "body": [
+      "<nav role=\"navigation\" class=\"fr-breadcrumb\" aria-label=\"vous êtes ici :\">",
+      "    <button class=\"fr-breadcrumb__button\" aria-expanded=\"false\" aria-controls=\"breadcrumb-1\">Voir le fil d’Ariane</button>",
+      "    <div class=\"fr-collapse\" id=\"breadcrumb-1\">",
+      "        <ol class=\"fr-breadcrumb__list\">",
+      "            <li>",
+      "                <a class=\"fr-breadcrumb__link\" href=\"/\">Accueil</a>",
+      "            </li>",
+      "            <li>",
+      "                <a class=\"fr-breadcrumb__link\" href=\"/${2:GA-PAYE}/\">${3:GA PAYE}</a>",
+      "            </li>",
+      "            <li>",
+      "                <a class=\"fr-breadcrumb__link\" href=\"/${2}/${4:RenoiRH-GA-PAYE}/\">${5:RenoiRH GA PAYE}</a>",
+      "            </li>",
+      "            <li>",
+      "                <a class=\"fr-breadcrumb__link\" aria-current=\"page\">${1:Titre de la rubrique}</a>",
+      "            </li>",
+      "        </ol>",
+      "    </div>",
+      "</nav>",
+      "",
+      "# ${1}",
+      "",
+      "/// row | fr-grid-row--gutters",
+      "/// col",
+      "/// card | ${6:Titre de la fiche}",
+      "    image: https://docsirh.e2.rie.gouv.fr/fichiers/${5:Dossier_media/image.png}",
+      "    target: ${7:Nom-de-la-page}",
+      "    enlarge: True",
+      "    variations: shadow",
+      "///",
+      "///",
+      "/// col",
+      "/// card | ${8:Titre de la fiche}",
+      "    image: https://docsirh.e2.rie.gouv.fr/fichiers/${5}",
+      "    target: ${9:Nom-de-la-page}",
+      "    enlarge: True",
+      "    variations: shadow",
+      "///",
+      "///",
+      "/// col",
+      "/// card | ${10:Titre de la fiche}",
+      "    image: https://docsirh.e2.rie.gouv.fr/fichiers/${5}",
+      "    target: ${11:Nom-de-la-page}",
+      "    enlarge: True",
+      "    variations: shadow",
+      "///",
+      "///",
+      "///",
+      "$0"
+    ]
+  },
+  "Doc SIRH : fil d'Ariane": {
+    "prefix": [
+      "dsfr-sirh-fil-ariane"
+    ],
+    "description": "Doc SIRH — fil d'Ariane en HTML (Accueil, rubrique, sous-rubrique, page courante)",
+    "body": [
+      "<nav role=\"navigation\" class=\"fr-breadcrumb\" aria-label=\"vous êtes ici :\">",
+      "    <button class=\"fr-breadcrumb__button\" aria-expanded=\"false\" aria-controls=\"breadcrumb-1\">Voir le fil d’Ariane</button>",
+      "    <div class=\"fr-collapse\" id=\"breadcrumb-1\">",
+      "        <ol class=\"fr-breadcrumb__list\">",
+      "            <li>",
+      "                <a class=\"fr-breadcrumb__link\" href=\"/\">Accueil</a>",
+      "            </li>",
+      "            <li>",
+      "                <a class=\"fr-breadcrumb__link\" href=\"/${2:GA-PAYE}/\">${3:GA PAYE}</a>",
+      "            </li>",
+      "            <li>",
+      "                <a class=\"fr-breadcrumb__link\" href=\"/${2}/${4:RenoiRH-GA-PAYE}/\">${5:RenoiRH GA PAYE}</a>",
+      "            </li>",
+      "            <li>",
+      "                <a class=\"fr-breadcrumb__link\" aria-current=\"page\">${1:Titre de la page}</a>",
+      "            </li>",
+      "        </ol>",
+      "    </div>",
+      "</nav>",
+      "$0"
+    ]
+  },
+  "Doc SIRH : niveau de fil d'Ariane": {
+    "prefix": [
+      "dsfr-sirh-fil-ariane-niveau"
+    ],
+    "description": "Doc SIRH — un niveau de plus dans le fil d'Ariane, à placer avant la page courante",
+    "body": [
+      "            <li>",
+      "                <a class=\"fr-breadcrumb__link\" href=\"/${1:chemin/de/la/page}/\">${2:Libellé}</a>",
+      "            </li>$0"
+    ]
+  },
+  "Doc SIRH : suivi des modifications": {
+    "prefix": [
+      "dsfr-sirh-suivi"
+    ],
+    "description": "Doc SIRH — accordéon « Suivi des modifications » avec le tableau des versions",
+    "body": [
+      "/// accordion | **Suivi des modifications**",
+      "",
+      "| **Version** | **Date** | **Emetteur** | **Suivi des modifications** |",
+      "|----|----|----|----|",
+      "| V${1:1} | $CURRENT_DATE/$CURRENT_MONTH/$CURRENT_YEAR | ${2:MATTE / DSNUMRH4} | ${3:Création} |",
+      "",
+      "///",
+      "$0"
+    ]
+  },
+  "Doc SIRH : nouvelle version": {
+    "prefix": [
+      "dsfr-sirh-version"
+    ],
+    "description": "Doc SIRH — ligne à ajouter au tableau « Suivi des modifications », datée du jour",
+    "body": [
+      "| V${1} | $CURRENT_DATE/$CURRENT_MONTH/$CURRENT_YEAR | ${2:MATTE / DSNUMRH4} | ${3:Mise à jour} |$0"
+    ]
+  },
+  "Doc SIRH : documents de référence": {
+    "prefix": [
+      "dsfr-sirh-docs-ref"
+    ],
+    "description": "Doc SIRH — tableau « Documents de référence »",
+    "body": [
+      "**Documents de référence**",
+      "",
+      "| **Type du document** | **Origine** | **Nom du document** | **Date** |",
+      "|----|----|----|----|",
+      "| ${1:Décret} | ${2} | ${3:Intitulé du document} | ${4:JJ/MM/AAAA} |",
+      "$0"
+    ]
+  },
+  "Doc SIRH : chemin dans l'application": {
+    "prefix": [
+      "dsfr-sirh-chemin"
+    ],
+    "description": "Doc SIRH — chemin de navigation : Domaine › Thème › Action fonctionnelle",
+    "body": [
+      "```",
+      "⮡ Domaine : ${1}",
+      " ⮡ Thème : ${2}",
+      "  ⮡ Action fonctionnelle : ${3}",
+      "```",
+      "$0"
+    ]
+  },
+  "Doc SIRH : capture d'écran": {
+    "prefix": [
+      "dsfr-sirh-capture"
+    ],
+    "description": "Doc SIRH — capture d'écran hébergée dans fichiers/, avec sa largeur (comme dans les MODOP)",
+    "body": [
+      "<img",
+      "src=\"https://docsirh.e2.rie.gouv.fr/fichiers/${1}\"",
+      "alt=\"${2:Description de la capture}\"",
+      "style=\"width:${3:6.27}in\" />",
+      "",
+      "$0"
+    ]
+  },
+  "Doc SIRH : consigne (alerte)": {
+    "prefix": [
+      "dsfr-sirh-consigne"
+    ],
+    "description": "Doc SIRH — encadré de consigne : alerte sans titre, texte en italique",
+    "body": [
+      "/// alert |",
+      "",
+      "_${1:Texte de la consigne}_",
+      "",
+      "///",
+      "$0"
+    ]
+  },
+  "Doc SIRH : 3 cartes": {
+    "prefix": [
+      "dsfr-sirh-cartes-3"
+    ],
+    "description": "Doc SIRH — ligne de 3 cartes vers des modes opératoires (même image pour les 3)",
+    "body": [
+      "/// row | fr-grid-row--gutters",
+      "/// col",
+      "/// card | ${2:Titre de la fiche}",
+      "    image: https://docsirh.e2.rie.gouv.fr/fichiers/${1:Dossier_media/image.png}",
+      "    target: ${3:Nom-de-la-page}",
+      "    enlarge: True",
+      "    variations: shadow",
+      "///",
+      "///",
+      "/// col",
+      "/// card | ${4:Titre de la fiche}",
+      "    image: https://docsirh.e2.rie.gouv.fr/fichiers/${1}",
+      "    target: ${5:Nom-de-la-page}",
+      "    enlarge: True",
+      "    variations: shadow",
+      "///",
+      "///",
+      "/// col",
+      "/// card | ${6:Titre de la fiche}",
+      "    image: https://docsirh.e2.rie.gouv.fr/fichiers/${1}",
+      "    target: ${7:Nom-de-la-page}",
+      "    enlarge: True",
+      "    variations: shadow",
+      "///",
+      "///",
+      "///",
+      "$0"
+    ]
+  },
+  "Doc SIRH : carte": {
+    "prefix": [
+      "dsfr-sirh-carte"
+    ],
+    "description": "Doc SIRH — une carte (colonne) à ajouter dans une ligne de cartes",
+    "body": [
+      "/// col",
+      "/// card | ${2:Titre de la fiche}",
+      "    image: https://docsirh.e2.rie.gouv.fr/fichiers/${1:Dossier_media/image.png}",
+      "    target: ${3:Nom-de-la-page}",
+      "    enlarge: True",
+      "    variations: shadow",
+      "///",
+      "///",
+      "$0"
+    ]
+  },
+  "Doc SIRH : carte vers un fichier": {
+    "prefix": [
+      "dsfr-sirh-carte-fichier"
+    ],
+    "description": "Doc SIRH — carte vers un fichier (Excel, PDF…) avec sa date de version",
+    "body": [
+      "/// col",
+      "/// card | ${1:Titre du document}",
+      "    image: https://docsirh.e2.rie.gouv.fr/fichiers/${2|Habilitations_media/xls.jpg,Dossier_media/image.png|}",
+      "    target: https://docsirh.e2.rie.gouv.fr/fichiers/${3:Dossier/fichier.xls}",
+      "    enlarge: True",
+      "    variations: shadow",
+      "Version du ${4:$CURRENT_DATE/$CURRENT_MONTH/$CURRENT_YEAR}",
+      "///",
+      "///",
+      "$0"
+    ]
   }
 }

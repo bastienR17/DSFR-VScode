@@ -171,6 +171,9 @@ assert.strictEqual(word(src, issue), '**limites **');
 assert.strictEqual(fixed(src, issue), 'Il a des **limites** à garder, et du **gras** normal.\n');
 clean(fixed(src, issue));
 clean('Un ** espace ** autour : non signalé.\n');
+// Gras appariés dans l'ordre (cas réel Doc SIRH) : pas de faux signalement
+clean('**G**estion de l’**A**rchivage et du stockage **U**nifiés du\n**D**ossier **I**ndividuel agent\n');
+clean('Du `**code **x` en ligne : ignoré.\n');
 
 // Fins de ligne Windows
 src = '/// alert | Titre\r\n    type: warnig\r\nTexte\r\n///\r\n';

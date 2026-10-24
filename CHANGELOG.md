@@ -2,6 +2,19 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## 0.9.6 — octobre 2026
+
+### Ajouts
+- **13 snippets Doc SIRH** (`dsfr-sirh-…`), écrits à partir de vrais modes opératoires et pages de rubrique de
+  l'équipe DSNUMRH4 : page de MODOP complète, page de rubrique en cartes, fil d'Ariane HTML, suivi des
+  modifications (la nouvelle version est datée du jour automatiquement), documents de référence, chemin
+  `⮡ Domaine › Thème › Action fonctionnelle`, capture d'écran, consigne, cartes. Taper `dsfr-sirh`
+  n'affiche qu'eux.
+
+### Corrections
+- « Gras mal fermé » : faux signalement sur `**G**estion de l'**A**rchivage` (les `**` sont maintenant
+  appariés dans l'ordre, comme le fait Python-Markdown). Le code en ligne est ignoré.
+
 ## 0.9.5 — octobre 2026
 
 ### Modifications
