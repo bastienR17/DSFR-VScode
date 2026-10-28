@@ -43,7 +43,9 @@ lib/
   links.js                liens, images et ancres introuvables
   quality.js              défauts de rédaction (liens mal formés, astérisques échappés, titres coupés)
                           et conseils (images sans description, liens absolus vers une page du site)
-  mkdocs-config.js        lecture facultative du mkdocs.yml (docs_dir, site_url, markdown_extensions)
+  mkdocs-config.js        lecture facultative du mkdocs.yml (docs_dir, site_url, markdown_extensions, theme)
+  site-frame.js           mise en page « comme le site » : en-tête, menu latéral, pied de page du thème
+  folding.js              repli des blocs « /// » dans l'éditeur
   assist.js               autocomplétion et aide au survol
   catalog.js              descriptions des blocs et options, liens vers la documentation du thème
   vendor/                 markdown-it, js-yaml et markdown-it-deflist (fichiers tiers, non modifiés)
@@ -53,6 +55,7 @@ media/
   dsfr-preview.js         script de l'aperçu : thème, accordéons, onglets, sommaire
 snippets/dsfr.json        snippets d'insertion des composants
 samples/                  pages d'exemple (démonstration et erreurs)
+syntaxes/                 coloration des blocs « /// » (grammaire injectée dans le Markdown de VS Code)
 test/                     tests (voir ci-dessous)
 scripts/captures.py       régénère les captures d'écran du README
 scripts/check-upstream.py veille : nouvelle version du thème, de dsfr_structure ou du DSFR (CI du lundi)
@@ -94,6 +97,9 @@ npm run test:browser   # script de l'aperçu dans Chromium
 | `test/assist.js` | Autocomplétion (blocs, options, valeurs, pictogrammes, icônes) et aide au survol. |
 | `test/links.js` | Liens, images et ancres introuvables ; identifiants de titres comme MkDocs ; lecture du `mkdocs.yml`. |
 | `test/snippets.js` | Chaque snippet produit un composant valide. |
+| `test/grammar.js` | Coloration des blocs `///` avec la vraie grammaire Markdown de VS Code (`test/fixtures/markdown.tmLanguage.json`, licence MIT) : en-têtes, options, fermetures colorés ; code ignoré. |
+| `test/folding.js` | Repli des blocs `///` : imbrication, code et en-tête YAML ignorés. |
+| `test/site-frame.js` | Mise en page « comme le site » : ordre du gabarit, menu latéral tiré des titres, réglages lus dans le `mkdocs.yml`, échappement. |
 | `test/samples.js` | `demo.md` ne signale aucune erreur ; `erreurs.md` en signale une par section, chaque encadré à la ligne du problème. |
 | `test/extension-host.js` | `extension.js` avec une API VS Code simulée : réglages, commandes déclarées, aperçu à côté, fenêtre séparée, soulignements, corrections, autocomplétion et survol. |
 | `test/preview_browser.py` | `dsfr-preview.js` dans Chromium, avec le chargement différé de VS Code et le passage d'une page à l'autre. |
@@ -132,8 +138,8 @@ nouvelle version est sortie (avertissement jaune, sans faire échouer les tests)
 2. Si le rendu a changé, régénérer les captures : `python3 scripts/captures.py`.
 3. Créer et pousser une étiquette (`v` suivi du numéro, sans point après le `v`) :
    ```bash
-   git tag v0.9.9
-   git push origin v0.9.9
+   git tag v0.10.0
+   git push origin v0.10.0
    ```
 4. La CI teste, construit le `.vsix` et le joint à une Release GitHub.
 

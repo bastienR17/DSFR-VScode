@@ -2,7 +2,7 @@
   "name": "dsfr-markdown-preview",
   "displayName": "Aperçu DSFR pour Markdown (MkDocs DSFR)",
   "description": "Affiche dans l'aperçu Markdown de VS Code le rendu DSFR des pages MkDocs DSFR : blocs dsfr_structure (alertes, accordéons, cartes, tuiles, onglets…) et composants de l'en-tête (bandeau, fil d'Ariane, sommaire).",
-  "version": "0.9.9",
+  "version": "0.10.0",
   "publisher": "dsnumrh4",
   "author": {
     "name": "Bastien (bastienR17)",
@@ -152,6 +152,39 @@
           ],
           "default": "side",
           "description": "Où le bouton « Ouvrir l'aperçu DSFR » et le raccourci Ctrl+Alt+D ouvrent l'aperçu. Les deux possibilités restent disponibles par clic droit et dans la palette de commandes."
+        },
+        "dsfrPreview.pageLayout": {
+          "type": "string",
+          "enum": [
+            "site",
+            "content"
+          ],
+          "default": "site",
+          "enumDescriptions": [
+            "Page entière comme sur le site : en-tête, menu latéral (sommaire de la page), contenu et pied de page",
+            "Contenu de la page seulement, sur toute la largeur de l'aperçu"
+          ],
+          "description": "Mise en page de l'aperçu. Les textes de l'en-tête et du pied de page sont lus dans le mkdocs.yml du site s'il est trouvé (theme: intitule, header, footer), sinon dans les réglages dsfrPreview.siteBrand, siteTitle et siteTagline."
+        },
+        "dsfrPreview.desktopWidth": {
+          "type": "boolean",
+          "default": false,
+          "description": "Avec la mise en page « site » : afficher la page comme sur un écran d'ordinateur (1280 px), réduite pour tenir dans l'aperçu. Les cartes, tuiles et colonnes passent alors à la ligne au même endroit que sur un ordinateur."
+        },
+        "dsfrPreview.siteBrand": {
+          "type": "string",
+          "default": "République<br>française",
+          "markdownDescription": "Bloc-marque de l'en-tête et du pied de page (`<br>` pour passer à la ligne), si le `mkdocs.yml` du site n'est pas trouvé."
+        },
+        "dsfrPreview.siteTitle": {
+          "type": "string",
+          "default": "Doc SIRH",
+          "description": "Titre du site dans l'en-tête, si le mkdocs.yml du site n'est pas trouvé."
+        },
+        "dsfrPreview.siteTagline": {
+          "type": "string",
+          "default": "",
+          "description": "Sous-titre du site dans l'en-tête, si le mkdocs.yml du site n'est pas trouvé."
         }
       }
     },
@@ -224,17 +257,28 @@
         "mac": "cmd+shift+alt+d",
         "when": "editorLangId == markdown"
       }
+    ],
+    "grammars": [
+      {
+        "scopeName": "markdown.dsfr.blocks",
+        "path": "./syntaxes/dsfr-blocks.tmLanguage.json",
+        "injectTo": [
+          "text.html.markdown"
+        ]
+      }
     ]
   },
   "scripts": {
     "test": "npm run test:js && npm run test:python",
-    "test:js": "node test/errors.js && node test/snippets.js && node test/frontmatter.js && node test/frontmatter-fix.js && node test/lint.js && node test/assist.js && node test/links.js && node test/quality.js && node test/samples.js && node test/extension-host.js",
+    "test:js": "node test/errors.js && node test/snippets.js && node test/frontmatter.js && node test/frontmatter-fix.js && node test/lint.js && node test/assist.js && node test/grammar.js && node test/folding.js && node test/site-frame.js && node test/links.js && node test/quality.js && node test/samples.js && node test/extension-host.js",
     "test:python": "cd test && python3 compare.py && python3 doc_check.py && python3 frontmatter_mkdocs.py",
     "test:browser": "cd test && python3 preview_browser.py",
     "package": "vsce package"
   },
   "devDependencies": {
     "@vscode/vsce": "^4.0.0",
-    "markdown-it": "^14.1.0"
+    "markdown-it": "^14.1.0",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.3.2"
   }
 }

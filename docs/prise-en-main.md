@@ -21,8 +21,16 @@ en haut à droite de l'éditeur, ou **Ctrl+Alt+D** (**Cmd+Maj+Alt+D** sur Mac).
 L'écran se partage : le Markdown à gauche, la page telle qu'elle s'affichera sur Doc SIRH à droite.
 L'aperçu se met à jour à chaque frappe, et suit la page ouverte quand on change d'onglet.
 
+L'aperçu montre la page entière comme sur le site : en-tête, menu latéral (le sommaire de la page,
+cliquable), contenu et pied de page. Pour ne voir que le contenu : réglage `dsfrPreview.pageLayout` → `content`.
+Pour voir la page à la largeur d'un ordinateur (les cartes passent à la ligne comme sur le site) :
+réglage `dsfrPreview.desktopWidth`.
+
 > Avec deux écrans : clic droit sur l'onglet du fichier → **Ouvrir l'aperçu DSFR dans une nouvelle fenêtre**,
 > puis glisser la fenêtre sur le second écran.
+
+Dans le Markdown, les blocs `///` sont colorés (nom, titre, options, fermeture) et la flèche dans la
+marge replie un bloc jusqu'à son `///` : pratique pour s'y retrouver dans une longue page.
 
 ## 3. Insérer un composant
 

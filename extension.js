@@ -25,6 +25,7 @@ const assist = require('./lib/assist');
 const { checkLinks } = require('./lib/links');
 const mkdocsConfig = require('./lib/mkdocs-config');
 const { checkQuality } = require('./lib/quality');
+const { foldingRanges } = require('./lib/folding');
 
 const SECTION = 'dsfrPreview';
 let statusItem = null;
@@ -42,6 +43,11 @@ function config() {
     checkLinks: c.get('checkLinks', true),
     checkImageAlt: c.get('checkImageAlt', true),
     siteUrl: c.get('siteUrl', 'https://docsirh.e2.rie.gouv.fr'),
+    pageLayout: c.get('pageLayout', 'site'),
+    desktopWidth: c.get('desktopWidth', false),
+    siteBrand: c.get('siteBrand', 'République<br>française'),
+    siteTitle: c.get('siteTitle', 'Doc SIRH'),
+    siteTagline: c.get('siteTagline', ''),
   };
 }
 
@@ -217,6 +223,29 @@ function siteConfig(file, workspaceRoot) {
   } catch (e) {
     return null;
   }
+}
+
+/**
+ * Réglages de la mise en page « comme le site » pour la page affichée dans l'aperçu, ou null si le
+ * réglage dsfrPreview.pageLayout vaut « content ». Les textes de l'en-tête et du pied de page viennent
+ * du mkdocs.yml du site s'il est trouvé, sinon des réglages de l'extension.
+ */
+function siteFrameFor(env) {
+  const c = config();
+  if (c.pageLayout !== 'site') return null;
+  const doc = env && env.currentDocument;
+  const file = doc && doc.scheme === 'file' ? doc.fsPath : null;
+  let theme = null;
+  if (file) {
+    const folder = vscode.workspace.getWorkspaceFolder ? vscode.workspace.getWorkspaceFolder(doc) : null;
+    const site = siteConfig(file, folder ? folder.uri.fsPath : null);
+    theme = site && site.theme ? site.theme : null;
+  }
+  return Object.assign(
+    { intitule: c.siteBrand, titre: c.siteTitle, sousTitre: c.siteTagline, editButton: !theme },
+    theme || {},
+    { desktop: !!c.desktopWidth }
+  );
 }
 
 const isInside = (file, dir) => {
@@ -557,6 +586,13 @@ function activate(context) {
     }),
     vscode.languages.registerCompletionItemProvider({ language: 'markdown' }, providers.completion, '/', ' ', ':', '-'),
     vscode.languages.registerHoverProvider({ language: 'markdown' }, providers.hover),
+    // Repli des blocs « /// » (flèches dans la marge), en plus des titres et listes repliés par VS Code
+    vscode.languages.registerFoldingRangeProvider({ language: 'markdown' }, {
+      provideFoldingRanges(document) {
+        if (!config().enabled) return [];
+        return foldingRanges(document.getText().split('\n')).map((r) => new vscode.FoldingRange(r.start, r.end));
+      },
+    }),
     vscode.workspace.onDidOpenTextDocument(lintDocument),
     vscode.workspace.onDidChangeTextDocument((e) => scheduleLint(e.document)),
     vscode.workspace.onDidCloseTextDocument(forgetDocument),
@@ -576,6 +612,7 @@ function activate(context) {
         features: () => ({ dsfr: isEnabled(), admonition: true, details: true, mkdocs: isEnabled() && config().mkdocsCompat }),
         showErrors: () => config().showErrors,
         theme: () => config().theme,
+        site: siteFrameFor,
         artworkDir: context.asAbsolutePath(path.join('media', 'dsfr', 'artwork', 'pictograms')),
       });
     },

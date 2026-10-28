@@ -175,7 +175,21 @@
   }
 
   /* --- Synchronisation après chaque (ré)insertion du contenu ------------- */
+  /* --- Largeur d'un écran d'ordinateur (réglage dsfrPreview.desktopWidth) ---------------
+   * La page est mise en forme sur 1280 px, puis réduite (zoom) pour tenir dans la largeur de l'aperçu :
+   * les cartes, tuiles et colonnes passent à la ligne comme sur un ordinateur.
+   */
+  var DESKTOP_WIDTH = 1280;
+  function applyDesktopWidth() {
+    var frame = document.querySelector('.dsfr-site[data-desktop="true"]');
+    if (!frame) return;
+    var scale = Math.min(1, document.documentElement.clientWidth / DESKTOP_WIDTH);
+    frame.style.zoom = String(Math.round(scale * 1000) / 1000);
+  }
+  window.addEventListener('resize', applyDesktopWidth);
+
   function sync() {
+    applyDesktopWidth();
     var state = applyState();
     if (state !== true) return;
     var page = currentPage();
@@ -217,6 +231,9 @@
     if (!id) return;
     var el = null;
     try { el = document.getElementById(decodeURIComponent(id)); } catch (e) { return; }
+    openAccordionOf(el);
+  }
+  function openAccordionOf(el) {
     var accordion = el && el.closest ? el.closest('.fr-accordion') : null;
     if (!accordion) return;
     var button = accordion.querySelector('.fr-accordion__btn');
@@ -230,13 +247,19 @@
     var target = event.target;
     if (!target || !target.closest) return;
 
-    // Sommaire : défilement vers le titre correspondant de l'aperçu
-    var go = target.closest('[data-dsfr-goto]');
+    // Sommaire et menu latéral : défilement vers le titre correspondant de l'aperçu
+    var go = target.closest('[data-dsfr-goto], [data-dsfr-toc-goto]');
     if (go) {
       event.preventDefault();
       event.stopPropagation();
-      var heading = document.querySelector('[data-dsfr-heading="' + go.getAttribute('data-dsfr-goto') + '"]');
-      if (heading) heading.scrollIntoView({ block: 'start' });
+      var heading = go.hasAttribute('data-dsfr-goto')
+        ? document.querySelector('[data-dsfr-heading="' + go.getAttribute('data-dsfr-goto') + '"]')
+        : document.querySelector('[data-dsfr-toc="' + go.getAttribute('data-dsfr-toc-goto') + '"]');
+      if (heading) {
+        // Titre dans un accordéon fermé (titre d'alerte ou d'accordéon compris) : on l'ouvre d'abord
+        openAccordionOf(heading);
+        heading.scrollIntoView({ block: 'start' });
+      }
       return;
     }
 

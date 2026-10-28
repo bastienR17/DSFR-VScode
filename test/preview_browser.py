@@ -17,13 +17,18 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = ("/// alert | Titre\n    type: warning\nTexte\n///\n\n/// accordion | Mon accordéon\nContenu caché\n///\n\n"
        "[Aller à la cible](#cible)\n\n/// accordion | Second\nTexte <span id=\"cible\">cible</span>\n///\n")
 
-body = json.loads(subprocess.run(['node', os.path.join(ROOT, 'test', 'render.js')], input=json.dumps([SRC]),
-                                 capture_output=True, text=True, check=True).stdout)[0]
-body = '<div id="dsfr-preview-state" data-enabled="true" data-theme="auto" hidden></div><div class="markdown-body">' + body + '</div>'
-attr = body.replace('&', '&amp;').replace('"', '&quot;')
+def rendered(src, *flags):
+    html = json.loads(subprocess.run(['node', os.path.join(ROOT, 'test', 'render.js'), *flags], input=json.dumps([src]),
+                                     capture_output=True, text=True, check=True).stdout)[0]
+    html = '<div id="dsfr-preview-state" data-enabled="true" data-theme="auto" hidden></div><div class="markdown-body">' + html + '</div>'
+    return html.replace('&', '&amp;').replace('"', '&quot;')
+attr = rendered(SRC)
+# Mise en page « comme le site », largeur d'ordinateur : titre avec sous-titres pour le menu latéral
+SITE_SRC = "# Page\n\n## Partie A\n\n### Sous-partie\n\nTexte\n\n## Partie B\n\n" + ("Paragraphe.\n\n" * 60) + "Fin\n"
+site_attr = rendered(SITE_SRC, '--site')
 links = ''.join(f'<link rel="stylesheet" href="/un-clone/media/{p}">' for p in
                 ['dsfr/dsfr.min.css', 'dsfr/utility/utility.min.css', 'dsfr/css/theme.css', 'dsfr-preview.css'])
-def page(source):
+def page(source, attr=attr):
     settings = json.dumps({'source': source}).replace('"', '&quot;')
     return f"""<!DOCTYPE html><html><head><meta charset="utf-8">{links}<meta id="data" data-c="{attr}">
 <meta id="vscode-markdown-preview-data" data-settings="{settings}" data-state="{{}}"></head>
@@ -50,8 +55,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return os.path.join(ROOT, path[len('/un-clone/'):].split('?')[0])
         return super().translate_path(path)
     def do_GET(self):
-        if self.path.startswith('/page/'):
-            data = page('file:///docs/' + self.path[len('/page/'):]).encode('utf8')
+        if self.path.startswith('/page/') or self.path.startswith('/site/'):
+            data = page('file:///docs/' + self.path[6:], site_attr if self.path.startswith('/site/') else attr).encode('utf8')
             self.send_response(200); self.send_header('Content-Type', 'text/html; charset=utf-8')
             self.send_header('Content-Length', str(len(data))); self.end_headers(); self.wfile.write(data)
         else:
@@ -92,6 +97,18 @@ with sync_playwright() as p:
     pg.evaluate('disableDsfr()'); pg.wait_for_timeout(200)
     assert pg.evaluate("[...document.querySelectorAll('link')].every(l => l.disabled)"), 'styles DSFR toujours actifs une fois le rendu coupé'
     assert not pg.evaluate("document.documentElement.hasAttribute('data-fr-theme')"), 'thème DSFR toujours appliqué'
+    # Mise en page « comme le site » : pleine largeur, page de 1280 px réduite, menu latéral cliquable
+    pg.set_viewport_size({'width': 800, 'height': 700})
+    pg.goto(base.replace('/page/', '/site/') + 'c.md'); pg.wait_for_timeout(600)
+    assert pg.evaluate("getComputedStyle(document.body).paddingLeft") == '0px', 'marge de VS Code conservée autour du site'
+    assert pg.evaluate("document.querySelector('.dsfr-site').style.zoom") == '0.625', pg.evaluate("document.querySelector('.dsfr-site').style.zoom")
+    sub = "document.getElementById('fr-sidemenu-item-1').classList.contains('fr-collapse--expanded')"
+    assert not pg.evaluate(sub)
+    pg.click('button[aria-controls="fr-sidemenu-item-1"]'); pg.wait_for_timeout(200)
+    assert pg.evaluate(sub), 'sous-menu du menu latéral fermé après clic'
+    before = pg.evaluate('window.scrollY')
+    pg.click('a.fr-sidemenu__link:has-text("Partie B")'); pg.wait_for_timeout(300)
+    assert pg.evaluate('window.scrollY') > before, 'le lien du menu latéral ne fait pas défiler vers le titre'
     b.close()
 server.shutdown()
-print('Aperçu (navigateur, comportement VS Code) : styles actifs puis coupés, accordéon cliquable, conservé et propre à chaque page, ouvert par un lien vers une ancre OK')
+print('Aperçu (navigateur, comportement VS Code) : styles actifs puis coupés, accordéon cliquable, conservé et propre à chaque page, ouvert par un lien vers une ancre ; mise en page comme le site OK')

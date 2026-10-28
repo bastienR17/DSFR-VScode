@@ -121,3 +121,25 @@ html[data-fr-theme='dark'] .dsfr-preview-error--warning .dsfr-preview-error__lab
 body.dsfr-preview .fr-summary {
   margin-bottom: 2rem;
 }
+
+/* --- Mise en page « comme le site » (lib/site-frame.js) --------------------------------
+ * En-tête, menu latéral et pied de page du thème occupent toute la largeur de l'aperçu,
+ * comme dans une fenêtre de navigateur : on retire la marge que VS Code met autour de la page.
+ */
+body.dsfr-preview:has(> .dsfr-site),
+body.dsfr-preview:has(.dsfr-site) {
+  padding: 0;
+  max-width: none;
+}
+body.dsfr-preview .dsfr-site {
+  min-height: 100vh;
+}
+/* Le contenu reprend l'interlignage et les marges du site */
+body.dsfr-preview .dsfr-site #contenu > :first-child {
+  margin-top: 0;
+}
+/* Largeur d'un écran d'ordinateur (réglage dsfrPreview.desktopWidth) : page de 1280 px réduite
+   pour tenir dans l'aperçu (le facteur est calculé par media/dsfr-preview.js) */
+body.dsfr-preview .dsfr-site[data-desktop="true"] {
+  width: 1280px;
+}

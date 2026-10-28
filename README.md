@@ -39,6 +39,12 @@ Extension créée par **Bastien** ([@bastienR17](https://github.com/bastienR17))
   description de chaque option et lien vers la documentation du thème.
 - **Interactif** : accordéons, onglets, fil d'Ariane et sommaire cliquables (un lien vers une ancre placée
   dans un accordéon fermé l'ouvre, comme sur le site) ; thème clair ou sombre aligné sur VS Code.
+- **La page comme sur le site** : en-tête (bloc-marque, titre du site), menu latéral avec le sommaire de la
+  page, colonne de contenu et pied de page, d'après les gabarits du thème. Les textes de l'en-tête sont lus dans
+  le `mkdocs.yml` du site. En option, la page s'affiche à la largeur d'un ordinateur, réduite pour tenir dans
+  l'aperçu : les cartes passent à la ligne au même endroit que sur le site.
+- **Les blocs `///` colorés et repliables dans l'éditeur** : nom du bloc, titre, options et fermeture en couleur ;
+  une flèche dans la marge replie un bloc (onglets, accordéon, grille…) jusqu'à son `///`.
 - **Aperçu à côté du Markdown** en un clic, ou dans une fenêtre séparée à placer sur un second écran.
   L'aperçu suit la page ouverte : changer d'onglet affiche l'autre page, avec ses accordéons tels qu'on les a laissés.
 - **42 snippets**, dont 13 propres à Doc SIRH, pour insérer les composants sans retenir leur syntaxe.
@@ -97,6 +103,9 @@ L'extension analyse la page ouverte (et seulement elle) pendant que vous écrive
   donne la ligne de ce « ``` » (elle est aussi soulignée dans l'éditeur).
 - **Structure** : un nom de bloc inconnu (`/// alrt` → `alert` ?) et un `///` qui ne ferme aucun bloc
   sont signalés : sur le site, ces lignes s'afficheraient telles quelles.
+- **Couleurs et repli** : les en-têtes `/// nom | titre`, leurs options et les fermetures `///` sont colorés,
+  ce qui montre d'un coup d'œil où commence et finit chaque bloc. La flèche dans la marge (ou **Ctrl+Maj+[**,
+  **Cmd+Alt+[** sur Mac) replie un bloc jusqu'à sa fermeture.
 - **Autocomplétion** : après `/// `, la liste des blocs ; sur une ligne d'options (4 espaces sous l'en-tête),
   les options du bloc, puis leurs valeurs (types, couleurs, pictogrammes, icônes du DSFR).
 - **Survol** d'un nom de bloc ou d'une option : description, valeurs possibles, valeur par défaut et lien
@@ -247,10 +256,14 @@ le mieux est de corriger aussi ce script pour qu'il mette les valeurs entre guil
 | `dsfrPreview.siteUrl` | adresse | `https://docsirh.e2.rie.gouv.fr` | Adresse du site, pour signaler les liens absolus vers ses pages (le `site_url` du `mkdocs.yml` est prioritaire ; réglage vide : pas de vérification) |
 | `dsfrPreview.mkdocsCompat` | `true`, `false` | `true` | Reproduire les règles Markdown du site |
 | `dsfrPreview.openMode` | `side`, `window` | `side` | Où s'ouvre l'aperçu : à côté du Markdown ou dans une fenêtre séparée |
+| `dsfrPreview.pageLayout` | `site`, `content` | `site` | Page entière comme sur le site (en-tête, menu latéral, pied de page), ou contenu seul |
+| `dsfrPreview.desktopWidth` | `true`, `false` | `false` | Page à la largeur d'un ordinateur (1280 px), réduite pour tenir dans l'aperçu |
+| `dsfrPreview.siteBrand`, `siteTitle`, `siteTagline` | texte | `République<br>française`, `Doc SIRH`, vide | Bloc-marque, titre et sous-titre de l'en-tête, si le `mkdocs.yml` du site n'est pas trouvé |
 
 ## Limites connues
 
-- Seul le contenu de la page est rendu : pas d'en-tête, de menu ni de pied de page du site.
+- L'en-tête et le pied de page reprennent le gabarit du thème, mais pas le menu de navigation du site (les autres
+  pages), la recherche ni les liens « page précédente / suivante » : l'aperçu ne connaît que la page ouverte.
 - Le JavaScript officiel du DSFR n'est pas chargé : accordéons, onglets et sommaire sont reproduits par un petit script.
 - Les chemins d'images sont résolus par rapport au fichier `.md`, comme le fait VS Code.
 - Les pictogrammes des tuiles sont intégrés en SVG : le rendu est identique, le HTML diffère légèrement du site.

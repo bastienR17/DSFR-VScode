@@ -20,7 +20,9 @@ RENDER = """
 const createMd = require('./test/vscode-like.js');
 const fs = require('fs');
 const file = process.argv[1];
-process.stdout.write(createMd({ showErrors: () => true }).render(fs.readFileSync(file, 'utf8'), {}));
+// Mise en page « comme le site » (réglage par défaut de l'extension)
+const site = () => ({ titre: 'Doc SIRH', sousTitre: 'Documentation des outils RH', editButton: false });
+process.stdout.write(createMd({ showErrors: () => true, site }).render(fs.readFileSync(file, 'utf8'), {}));
 """
 
 # Styles de base approximatifs de l'aperçu Markdown de VS Code
@@ -74,7 +76,7 @@ def main():
     with sync_playwright() as p:
         browser = p.chromium.launch()
         for name in pages:
-            pg = browser.new_page(viewport={'width': 960, 'height': pages[name][1]}, device_scale_factor=1)
+            pg = browser.new_page(viewport={'width': 1100, 'height': pages[name][1]}, device_scale_factor=1)
             pg.goto(base + name)
             pg.wait_for_timeout(800)
             target = os.path.join(OUT, name.replace('.html', '.png'))

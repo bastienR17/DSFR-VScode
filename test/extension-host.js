@@ -26,6 +26,7 @@ let diagnosticsListener = null;
 const messages = [];
 let completionProvider = null;
 let hoverProvider = null;
+let foldingProvider = null;
 let modalAnswer;
 const saved = [];
 class Range {
@@ -132,6 +133,7 @@ const vscode = {
     registerCodeActionsProvider: (selector, provider) => { codeActionProvider = provider; return { dispose() {} }; },
     registerCompletionItemProvider: (selector, provider, ...triggers) => { completionProvider = { provider, triggers }; return { dispose() {} }; },
     registerHoverProvider: (selector, provider) => { hoverProvider = provider; return { dispose() {} }; },
+    registerFoldingRangeProvider: (selector, provider) => { foldingProvider = provider; return { dispose() {} }; },
     onDidChangeDiagnostics: (fn) => { diagnosticsListener = fn; return { dispose() {} }; },
   },
   CompletionItem: class { constructor(label, kind) { Object.assign(this, { label, kind }); } },
@@ -140,6 +142,7 @@ const vscode = {
   SnippetString: class { constructor(value) { this.value = value; } },
   MarkdownString: class { constructor(value) { this.value = value; } },
   Hover: class { constructor(contents, range) { Object.assign(this, { contents, range }); } },
+  FoldingRange: class { constructor(start, end) { Object.assign(this, { start, end }); } },
   Range, Diagnostic, CodeAction, WorkspaceEdit,
   DiagnosticSeverity: { Error: 0, Warning: 1, Information: 2 },
   CodeActionKind: (() => {
@@ -365,6 +368,29 @@ async function lintVia(document) {
   assert(hov.contents.value.includes('Pictogramme DSFR'), hov.contents.value);
   settings.enabled = false;
   assert.strictEqual(completionProvider.provider.provideCompletionItems(optDoc, { line: 1, character: 16 }), undefined);
+  settings.enabled = true;
+
+  // Mise en page « comme le site » : réglages par défaut, puis textes du mkdocs.yml, puis contenu seul
+  let framed = md.render('# Titre\n', { currentDocument: new Uri('/tmp/other/page.md') });
+  assert(framed.includes('<div class="dsfr-site">') && framed.includes('<p class="fr-header__service-title">Doc SIRH</p>'), framed.slice(0, 400));
+  const themed = fs.mkdtempSync(path.join(os.tmpdir(), 'dsfr-theme-'));
+  fs.mkdirSync(path.join(themed, 'docs'));
+  fs.writeFileSync(path.join(themed, 'mkdocs.yml'), 'theme:\n  name: dsfr\n  header:\n    titre: Mon site\n  afficher_menu_lateral: false\n');
+  framed = md.render('# Titre\n', { currentDocument: new Uri(path.join(themed, 'docs', 'page.md')) });
+  assert(framed.includes('<p class="fr-header__service-title">Mon site</p>') && !framed.includes('fr-sidemenu') && !framed.includes('Éditer dans'), 'textes du mkdocs.yml');
+  fs.rmSync(themed, { recursive: true, force: true });
+  settings.desktopWidth = true;
+  assert(md.render('# T\n', {}).includes('data-desktop="true"'));
+  delete settings.desktopWidth;
+  settings.pageLayout = 'content';
+  assert(!md.render('# T\n', {}).includes('dsfr-site'), 'réglage pageLayout = content');
+  delete settings.pageLayout;
+
+  // Repli des blocs « /// »
+  const foldDoc = textDocument(new Uri('/tmp/other/repli.md'), '/// tabs\n/// tab | Un\nA\n///\n///\n');
+  assert.deepStrictEqual(foldingProvider.provideFoldingRanges(foldDoc).map((r) => [r.start, r.end]), [[0, 4], [1, 3]]);
+  settings.enabled = false;
+  assert.deepStrictEqual(foldingProvider.provideFoldingRanges(foldDoc), []);
   settings.enabled = true;
 
   // Correction de tout le dossier : rien sans confirmation, puis correction et enregistrement

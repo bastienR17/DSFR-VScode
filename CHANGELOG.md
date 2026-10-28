@@ -2,6 +2,20 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## 0.10.0 — octobre 2026
+
+### Ajouts
+- **L'aperçu montre la page comme sur le site** : en-tête (bloc-marque, titre et sous-titre du site),
+  bandeau, **menu latéral** avec le sommaire de la page (cliquable), colonne de contenu et pied de page,
+  d'après les gabarits du thème mkdocs-dsfr 0.27. Les textes de l'en-tête et du pied de page sont lus dans le
+  `mkdocs.yml` du site, sinon dans les réglages `dsfrPreview.siteBrand`, `siteTitle` et `siteTagline`.
+  Le réglage `dsfrPreview.pageLayout` = `content` revient à l'affichage du contenu seul.
+- Réglage `dsfrPreview.desktopWidth` : la page s'affiche à la largeur d'un ordinateur (1280 px), réduite pour
+  tenir dans l'aperçu ; les cartes, tuiles et colonnes passent à la ligne comme sur le site.
+- **Couleurs dans l'éditeur** : les en-têtes `/// nom | titre`, les options (clé et valeur) et les fermetures
+  `///` sont colorés selon le thème de VS Code. Rien n'est coloré dans les blocs de code.
+- **Repli des blocs** : une flèche dans la marge replie un bloc `///` (onglets, accordéon, grille…) jusqu'à sa fermeture.
+
 ## 0.9.9 — octobre 2026
 
 L'aperçu suit maintenant les dernières versions du thème, celles qu'utilise le site Doc SIRH
