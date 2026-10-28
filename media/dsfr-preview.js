@@ -212,6 +212,17 @@
     });
   }
 
+  // Ouvre l'accordéon fermé qui contient l'élément d'identifiant `id` (s'il y en a un).
+  function openAccordionAround(id) {
+    if (!id) return;
+    var el = null;
+    try { el = document.getElementById(decodeURIComponent(id)); } catch (e) { return; }
+    var accordion = el && el.closest ? el.closest('.fr-accordion') : null;
+    if (!accordion) return;
+    var button = accordion.querySelector('.fr-accordion__btn');
+    if (button && button.getAttribute('aria-expanded') !== 'true') button.click();
+  }
+
   /* --- Clics et clavier -------------------------------------------------- */
   // Écoute en phase de capture : VS Code intercepte les clics sur les liens de l'aperçu.
   document.addEventListener('click', function (event) {
@@ -228,6 +239,11 @@
       if (heading) heading.scrollIntoView({ block: 'start' });
       return;
     }
+
+    // Lien vers une ancre de la page placée dans un accordéon fermé : l'accordéon s'ouvre d'abord,
+    // comme sur le site (thème mkdocs-dsfr 0.27) ; VS Code fait ensuite défiler jusqu'à l'ancre.
+    var anchor = target.closest('a[href^="#"]');
+    if (anchor) openAccordionAround(anchor.getAttribute('href').slice(1));
 
     var btn = target.closest(COLLAPSE_BTN);
     if (btn && collapseTarget(btn)) {

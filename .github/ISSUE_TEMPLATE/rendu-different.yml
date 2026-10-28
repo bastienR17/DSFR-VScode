@@ -34,4 +34,4 @@ body:
     attributes:
       label: Versions
       description: Extension (panneau Extensions), VS Code (Aide → À propos) et, si vous la connaissez, version du thème mkdocs-dsfr.
-      placeholder: "extension 0.9.8, VS Code 1.95, mkdocs-dsfr 0.26.1"
+      placeholder: "extension 0.9.9, VS Code 1.95, mkdocs-dsfr 0.27.0"

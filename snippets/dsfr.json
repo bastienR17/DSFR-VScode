@@ -400,6 +400,40 @@
       "$0"
     ]
   },
+  "Tag": {
+    "prefix": [
+      "dsfr-tag",
+      "dsfr-etiquette"
+    ],
+    "description": "Tag DSFR (étiquette), cliquable ou lien vers une page",
+    "body": [
+      "/// tag | ${1:Libellé}",
+      "    target: ${2:page.md}",
+      "///",
+      "$0"
+    ]
+  },
+  "Groupe de tags": {
+    "prefix": [
+      "dsfr-tags",
+      "dsfr-etiquettes"
+    ],
+    "description": "Groupe de tags DSFR côte à côte",
+    "body": [
+      "/// tags",
+      "",
+      "/// tag | ${1:Premier}",
+      "    target: ${2:page.md}",
+      "///",
+      "",
+      "/// tag | ${3:Deuxième}",
+      "    target: ${4:page.md}",
+      "///",
+      "",
+      "///",
+      "$0"
+    ]
+  },
   "Image DSFR avec légende": {
     "prefix": [
       "dsfr-image",

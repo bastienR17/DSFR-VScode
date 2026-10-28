@@ -71,5 +71,12 @@
 "- a\n\n  - b\n\n- c\n",
 "- a\n   - b\n- c\n",
 "- a\n    - b\n- c\n",
-"Texte :\n\n- a\n  1. un\n  2. deux\n- b\n"
+"Texte :\n\n- a\n  1. un\n  2. deux\n- b\n",
+"/// tag | Tag **gras** & <b>x</b>\n///\n",
+"/// tag | Avec attrs\n    attrs: {class: maclasse, id: monid}\n///\n",
+"/// tag | Avec texte\nCorps du tag\n///\n",
+"Avant\n\n/// tags\n/// tag | A\n///\n/// tag | B\n    size: sm\n///\n///\n\nAprès\n",
+"/// tag | Lien externe\n    target: https://x.gouv.fr\n    target_new: true\n    size: sm\n    icon: external-link-line\n///\n",
+"/// tag | Rouge\n    color: rouge\n///\n",
+"/// button | Avec texte\nCorps\n///\n"
 ]

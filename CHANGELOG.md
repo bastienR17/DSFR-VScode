@@ -2,6 +2,22 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## 0.9.9 — octobre 2026
+
+L'aperçu suit maintenant les dernières versions du thème, celles qu'utilise le site Doc SIRH
+(mis à jour automatiquement) : **mkdocs-dsfr 0.27.0, `dsfr_structure` 0.13.0, DSFR 1.15.4**.
+
+### Ajouts
+- **Tags** : nouveaux blocs `/// tag | Libellé` (étiquette, ou lien avec `target`) et `/// tags` (groupe de
+  tags côte à côte), avec leurs options (`size`, `icon`, `color`, `target`, `target_new`), l'autocomplétion,
+  l'aide au survol et les snippets `dsfr-tag` et `dsfr-tags`. Rendu identique au site sur tous les tests
+  officiels de `dsfr_structure`.
+- Comme le thème 0.27 : un lien vers une ancre (`#titre`) placée dans un accordéon fermé ouvre l'accordéon.
+
+### Modifications
+- Styles, polices Marianne et icônes du DSFR 1.15.4 (au lieu de 1.15.2).
+- Bouton ou tag avec du texte sous l'en-tête : le titre et le texte sont séparés par une espace, comme sur le site.
+
 ## 0.9.8 — octobre 2026
 
 Version issue de la comparaison de 11 vraies pages Doc SIRH (modes opératoires et pages de rubrique)

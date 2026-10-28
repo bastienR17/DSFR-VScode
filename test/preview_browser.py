@@ -14,7 +14,8 @@ import functools, http.server, json, os, subprocess, threading
 from playwright.sync_api import sync_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = "/// alert | Titre\n    type: warning\nTexte\n///\n\n/// accordion | Mon accordéon\nContenu caché\n///\n"
+SRC = ("/// alert | Titre\n    type: warning\nTexte\n///\n\n/// accordion | Mon accordéon\nContenu caché\n///\n\n"
+       "[Aller à la cible](#cible)\n\n/// accordion | Second\nTexte <span id=\"cible\">cible</span>\n///\n")
 
 body = json.loads(subprocess.run(['node', os.path.join(ROOT, 'test', 'render.js')], input=json.dumps([SRC]),
                                  capture_output=True, text=True, check=True).stdout)[0]
@@ -83,9 +84,14 @@ with sync_playwright() as p:
     pg.goto(base + 'b.md'); pg.wait_for_timeout(600)
     pg.goto(base + 'a.md'); pg.wait_for_timeout(600)
     assert not pg.evaluate(expanded), "l'accordéon refermé sur a.md s'est rouvert"
+    # Lien vers une ancre placée dans un accordéon fermé : l'accordéon s'ouvre (comme mkdocs-dsfr 0.27)
+    second = "document.querySelectorAll('.fr-collapse')[1].classList.contains('fr-collapse--expanded')"
+    assert not pg.evaluate(second), 'second accordéon ouvert trop tôt'
+    pg.click('a[href="#cible"]'); pg.wait_for_timeout(200)
+    assert pg.evaluate(second), "l'accordéon contenant l'ancre ne s'est pas ouvert"
     pg.evaluate('disableDsfr()'); pg.wait_for_timeout(200)
     assert pg.evaluate("[...document.querySelectorAll('link')].every(l => l.disabled)"), 'styles DSFR toujours actifs une fois le rendu coupé'
     assert not pg.evaluate("document.documentElement.hasAttribute('data-fr-theme')"), 'thème DSFR toujours appliqué'
     b.close()
 server.shutdown()
-print('Aperçu (navigateur, comportement VS Code) : styles actifs puis coupés, accordéon cliquable, conservé et propre à chaque page OK')
+print('Aperçu (navigateur, comportement VS Code) : styles actifs puis coupés, accordéon cliquable, conservé et propre à chaque page, ouvert par un lien vers une ancre OK')

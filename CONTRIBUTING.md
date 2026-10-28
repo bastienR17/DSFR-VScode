@@ -84,7 +84,7 @@ npm run test:browser   # script de l'aperçu dans Chromium
 
 | Fichier | Ce qui est vérifié |
 |---|---|
-| `test/compare.py` | Le HTML de l'extension est identique à celui du vrai moteur du site (Python-Markdown + `dsfr_structure` 0.12), sur les cas de test officiels de `dsfr_structure` et sur `test/cases.json`. Les quelques écarts voulus sont listés dans le script. |
+| `test/compare.py` | Le HTML de l'extension est identique à celui du vrai moteur du site (Python-Markdown + `dsfr_structure` 0.13), sur les cas de test officiels de `dsfr_structure` et sur `test/cases.json`. Les quelques écarts voulus sont listés dans le script. |
 | `test/doc_check.py` | Les 41 exemples de la [documentation du thème](https://pub.gitlab-pages.din.developpement-durable.gouv.fr/numeco/mkdocs-dsfr-doc/) (`test/doc_examples.py`) : rendu identique au site, aucune erreur signalée. |
 | `test/errors.js` | Signalement des erreurs, adresses dangereuses neutralisées, guillemets échappés dans toutes les options texte, rendu désactivé. |
 | `test/frontmatter.js` | Composants de l'en-tête YAML et leurs erreurs. |
@@ -109,7 +109,7 @@ par l'aperçu de VS Code.
 
 ## Mettre à jour le DSFR
 
-Les fichiers de `media/dsfr/` viennent du thème `mkdocs-dsfr` (actuellement 0.26.1, DSFR 1.15.2).
+Les fichiers de `media/dsfr/` viennent du thème `mkdocs-dsfr` (actuellement 0.27.0, DSFR 1.15.4).
 Quand le site passe à une nouvelle version du thème :
 
 ```bash
@@ -132,8 +132,8 @@ nouvelle version est sortie (avertissement jaune, sans faire échouer les tests)
 2. Si le rendu a changé, régénérer les captures : `python3 scripts/captures.py`.
 3. Créer et pousser une étiquette (`v` suivi du numéro, sans point après le `v`) :
    ```bash
-   git tag v0.9.8
-   git push origin v0.9.8
+   git tag v0.9.9
+   git push origin v0.9.9
    ```
 4. La CI teste, construit le `.vsix` et le joint à une Release GitHub.
 

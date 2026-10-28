@@ -41,7 +41,8 @@ assert.strictEqual(completions(p.lines, p.line, p.character, assets, { snippets:
 
 // Noms de blocs
 r = complete('Texte\n\n/// ¦');
-assert.strictEqual(labels(r).length, 15);
+assert.strictEqual(labels(r).length, 17);
+assert(labels(r).includes('tag') && labels(r).includes('tags'), 'blocs de dsfr_structure 0.13');
 assert(labels(r).includes('accordion') && labels(r).includes('tile'));
 const acc = r.items.find((i) => i.label === 'accordion');
 assert(acc.snippet && acc.insertText === 'accordion | ${1:Titre}', 'titre obligatoire : proposé dans le snippet');

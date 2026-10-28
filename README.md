@@ -24,8 +24,8 @@ Extension créée par **Bastien** ([@bastienR17](https://github.com/bastienR17))
 
 ## Fonctionnalités
 
-- **Tous les composants du thème** : les 15 blocs de `dsfr_structure` (`/// alert`, `/// accordion`,
-  `/// card`, `/// tile`, `/// tabs`, `/// buttons`, `/// row` / `/// col`…), les citations `>` en
+- **Tous les composants du thème** : les 17 blocs de `dsfr_structure` (`/// alert`, `/// accordion`,
+  `/// card`, `/// tile`, `/// tabs`, `/// buttons`, `/// tags`, `/// row` / `/// col`…), les citations `>` en
   mise en exergue, les tableaux DSFR avec légende, les encadrés `!!!` et `???`.
 - **L'en-tête de page** : bandeau d'information, fil d'Ariane, sommaire et lettre d'information déclarés
   dans le YAML en haut du fichier, placés comme sur le site.
@@ -37,10 +37,11 @@ Extension créée par **Bastien** ([@bastienR17](https://github.com/bastienR17))
   affichés dans l'aperçu **et soulignés dans le Markdown**, avec une correction en un clic quand c'est possible.
 - **Autocomplétion et aide au survol** : noms de blocs, options et valeurs proposés pendant la frappe,
   description de chaque option et lien vers la documentation du thème.
-- **Interactif** : accordéons, onglets, fil d'Ariane et sommaire cliquables ; thème clair ou sombre aligné sur VS Code.
+- **Interactif** : accordéons, onglets, fil d'Ariane et sommaire cliquables (un lien vers une ancre placée
+  dans un accordéon fermé l'ouvre, comme sur le site) ; thème clair ou sombre aligné sur VS Code.
 - **Aperçu à côté du Markdown** en un clic, ou dans une fenêtre séparée à placer sur un second écran.
   L'aperçu suit la page ouverte : changer d'onglet affiche l'autre page, avec ses accordéons tels qu'on les a laissés.
-- **40 snippets**, dont 13 propres à Doc SIRH, pour insérer les composants sans retenir leur syntaxe.
+- **42 snippets**, dont 13 propres à Doc SIRH, pour insérer les composants sans retenir leur syntaxe.
 
 ![Erreurs signalées dans l'aperçu](docs/images/erreurs.png)
 
@@ -136,6 +137,7 @@ possibles (type d'alerte, couleur…) se choisissent ensuite dans une liste ; **
 | `dsfr-grille` | Ligne de grille à deux colonnes |
 | `dsfr-onglets` | Système d'onglets |
 | `dsfr-boutons`, `dsfr-bouton` | Groupe de boutons, bouton |
+| `dsfr-tag`, `dsfr-tags` | Tag (étiquette), groupe de tags |
 | `dsfr-image`, `dsfr-video` | Contenu média |
 | `dsfr-img` | Image hébergée sur Doc SIRH : insère `![](https://docsirh.e2.rie.gouv.fr/fichiers/)`, curseur après `fichiers/` pour compléter le chemin, puis **Tab** pour la description |
 | `dsfr-tableau` | Tableau avec légende |
@@ -209,7 +211,7 @@ Là où les deux moteurs diffèrent, l'aperçu reproduit le comportement du site
 - les attributs `{: .classe }` (`attr_list`) et les listes de définitions (`def_list`) sont pris en charge.
 
 L'aperçu signale aussi deux particularités du thème : le titre `title` du bandeau d'en-tête n'est pas
-affiché par mkdocs-dsfr 0.26.1, et un bouton à icône placé dans un groupe `/// buttons` est réduit à son
+affiché par mkdocs-dsfr (encore en 0.27.0), et un bouton à icône placé dans un groupe `/// buttons` est réduit à son
 icône si le groupe n'a pas la classe `fr-btns-group--icon-left` ou `--icon-right`.
 
 ## En-têtes YAML illisibles
@@ -252,7 +254,7 @@ le mieux est de corriger aussi ce script pour qu'il mette les valeurs entre guil
 - Le JavaScript officiel du DSFR n'est pas chargé : accordéons, onglets et sommaire sont reproduits par un petit script.
 - Les chemins d'images sont résolus par rapport au fichier `.md`, comme le fait VS Code.
 - Les pictogrammes des tuiles sont intégrés en SVG : le rendu est identique, le HTML diffère légèrement du site.
-- Version de référence : thème mkdocs-dsfr 0.26.1, `dsfr_structure` 0.12, DSFR 1.15.2.
+- Version de référence : thème mkdocs-dsfr 0.27.0, `dsfr_structure` 0.13, DSFR 1.15.4.
 
 ## Contribuer
 

@@ -116,6 +116,18 @@ Fiche pratique
 ///
 ///
 
+/// tags
+/// tag | Ressources humaines
+    target: erreurs.md
+///
+/// tag | Paie
+    icon: money-euro-circle-line
+///
+/// tag | Formation
+    color: green-menthe
+///
+///
+
 ## Citation et définitions
 
 /// quote | Une utilisatrice
