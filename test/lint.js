@@ -204,6 +204,22 @@ clean('Un ** espace ** autour : non signalé.\n');
 clean('**G**estion de l’**A**rchivage et du stockage **U**nifiés du\n**D**ossier **I**ndividuel agent\n');
 clean('Du `**code **x` en ligne : ignoré.\n');
 
+// Titre sans espace après les « # » (cas réel) : titre sur le site, espace proposé
+src = 'Intro\n\n###Rechercher l’acte à modifier\n\nTexte\n';
+issue = only(src);
+assert.strictEqual(issue.code, 'dsfr-heading-space');
+assert.strictEqual(issue.severity, 'warning');
+assert.strictEqual(word(src, issue), '###Rechercher l’acte à modifier');
+assert(issue.message.includes('« ### Titre »'), issue.message);
+assert.strictEqual(issue.fixes[0].title, 'Ajouter un espace après « ### »');
+assert.strictEqual(fixed(src, issue), 'Intro\n\n### Rechercher l’acte à modifier\n\nTexte\n');
+clean(fixed(src, issue));
+assert.strictEqual(only('#######Sept\n').fixes.length, 0, '7 « # » : pas de correction évidente');
+clean('```\n#!/bin/bash\n```\n');
+clean('    ###code indenté\n');
+clean('---\n# commentaire YAML\ntitle: x\n---\n\n# Titre\n');
+assert.deepStrictEqual(createLinter({ mkdocsCompat: () => false })('###Titre\n'), [], 'réglage mkdocsCompat coupé');
+
 // Fins de ligne Windows
 src = '/// alert | Titre\r\n    type: warnig\r\nTexte\r\n///\r\n';
 issue = only(src);

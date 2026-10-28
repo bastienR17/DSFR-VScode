@@ -83,6 +83,7 @@ Dans l'aperçu, un **double-clic** sur un encadré d'erreur ramène aussi à la 
 | Options du bloc ignorées | options pas indentées de **4 espaces** sous `/// nom` | ré-indenter les lignes d'options |
 | En-tête affiché en texte en haut de la page | une valeur de l'en-tête YAML contient « : » | ampoule → *Mettre entre guillemets…* |
 | Mot en gras qui affiche `**` sur le site | espace avant les `**` fermantes (`**texte **suite`) | ampoule → *Coller les \*\* au mot* |
+| Titre affiché en texte dans le wiki GitLab | pas d'espace après les `#` (`###Titre`) | ampoule → *Ajouter un espace* : `### Titre` |
 | Puces affichées en texte | liste collée au paragraphe, sans ligne vide avant | ajouter une ligne vide avant la liste |
 
 ## Et ensuite ?

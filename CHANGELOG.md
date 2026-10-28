@@ -2,6 +2,13 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## 0.10.1 — octobre 2026
+
+### Corrections
+- **Titre sans espace après les `#`** (`###Rechercher l'acte à modifier`) : le site l'affiche comme un titre,
+  l'aperçu le laissait en texte. L'aperçu fait maintenant comme le site, et l'éditeur le signale avec une
+  correction en un clic (`### Rechercher…`) : sans l'espace, il reste en texte dans le wiki GitLab.
+
 ## 0.10.0 — octobre 2026
 
 ### Ajouts

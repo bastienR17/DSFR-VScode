@@ -78,5 +78,16 @@
 "Avant\n\n/// tags\n/// tag | A\n///\n/// tag | B\n    size: sm\n///\n///\n\nAprès\n",
 "/// tag | Lien externe\n    target: https://x.gouv.fr\n    target_new: true\n    size: sm\n    icon: external-link-line\n///\n",
 "/// tag | Rouge\n    color: rouge\n///\n",
-"/// button | Avec texte\nCorps\n///\n"
+"/// button | Avec texte\nCorps\n///\n",
+"###Rechercher l’acte à modifier\n",
+"#Titre\n",
+"###Titre ###\n",
+"#######Sept\n",
+"  ###Indenté\n",
+"Texte\n###Suite\nencore\n",
+"> ###Citation\n",
+"###**Gras** et `code`\n",
+"#!/bin/bash\n",
+"## Normal\n",
+"#\n"
 ]
