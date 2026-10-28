@@ -27,11 +27,15 @@ const mkdocsConfig = require('./lib/mkdocs-config');
 const { checkQuality } = require('./lib/quality');
 const { foldingRanges } = require('./lib/folding');
 const { DOC_SIRH } = require('./lib/site-frame');
+const { buildMenu, headerPlacement } = require('./lib/component-menu');
+const { blockDecorations, COLORS } = require('./lib/decorations');
 
 const SECTION = 'dsfrPreview';
 let statusItem = null;
 // Compteur des problèmes de la page ouverte (barre d'état) ; un clic les liste.
 let problemsItem = null;
+// Bouton « Insérer un composant » de la barre d'état
+let insertItem = null;
 
 function config() {
   const c = vscode.workspace.getConfiguration(SECTION);
@@ -46,6 +50,8 @@ function config() {
     siteUrl: c.get('siteUrl', 'https://docsirh.e2.rie.gouv.fr'),
     pageLayout: c.get('pageLayout', 'site'),
     desktopWidth: c.get('desktopWidth', false),
+    colors: c.get('colors', true),
+    autoOpen: c.get('autoOpen', true),
     siteBrand: c.get('siteBrand', DOC_SIRH.intitule),
     siteTitle: c.get('siteTitle', DOC_SIRH.titre),
     siteTagline: c.get('siteTagline', DOC_SIRH.sousTitre),
@@ -84,9 +90,12 @@ function updateStatus() {
     return;
   }
   const on = isEnabled();
-  statusItem.text = on ? '$(eye) DSFR' : '$(eye-closed) DSFR';
-  statusItem.tooltip = (on ? 'Aperçu DSFR actif' : 'Aperçu DSFR désactivé') + ' — cliquer pour basculer';
+  statusItem.text = on ? '$(eye) Aperçu DSFR' : '$(eye-closed) Aperçu DSFR coupé';
+  statusItem.tooltip = (on ? 'Aperçu DSFR actif' : 'Aperçu DSFR coupé : l\'aperçu standard de VS Code est affiché') + ' — cliquer pour basculer';
   statusItem.show();
+  if (insertItem) {
+    if (on) insertItem.show(); else insertItem.hide();
+  }
 }
 
 /**
@@ -318,7 +327,57 @@ function scheduleLint(document) {
   lintTimers.set(key, setTimeout(() => {
     lintTimers.delete(key);
     lintDocument(document);
+    decorateDocument(document);
   }, LINT_DELAY));
+}
+
+/* --- Couleurs DSFR des blocs « /// » (lib/decorations.js) ------------------------------- */
+let decorationTypes = null;
+function createDecorationTypes() {
+  const color = (k, extra) => vscode.window.createTextEditorDecorationType(Object.assign({
+    light: { color: COLORS[k].light }, dark: { color: COLORS[k].dark },
+  }, extra || {}));
+  return {
+    fence: color('fence', { fontWeight: 'bold' }),
+    name: color('name', { fontWeight: 'bold' }),
+    title: color('title'),
+    key: color('key'),
+    band: vscode.window.createTextEditorDecorationType({
+      isWholeLine: true, light: { backgroundColor: COLORS.band.light }, dark: { backgroundColor: COLORS.band.dark },
+    }),
+  };
+}
+function decorateEditor(editor) {
+  if (!decorationTypes || !editor || !editor.setDecorations || editor.document.languageId !== 'markdown') return;
+  const c = config();
+  const d = c.enabled && c.colors
+    ? blockDecorations(editor.document.getText().split('\n'))
+    : { fence: [], name: [], title: [], key: [], band: [] };
+  const range = (r) => new vscode.Range(r.line, r.start, r.line, r.end);
+  for (const k of ['fence', 'name', 'title', 'key']) editor.setDecorations(decorationTypes[k], d[k].map(range));
+  editor.setDecorations(decorationTypes.band, d.band.map((l) => new vscode.Range(l, 0, l, 0)));
+}
+function decorateDocument(document) {
+  for (const e of vscode.window.visibleTextEditors || []) if (e.document === document) decorateEditor(e);
+}
+const decorateVisible = () => { for (const e of vscode.window.visibleTextEditors || []) decorateEditor(e); };
+
+/* --- Ouverture automatique de l'aperçu (réglage dsfrPreview.autoOpen) -------------------
+ * À la première page Markdown ouverte dans la fenêtre, l'aperçu DSFR s'ouvre à côté, une seule fois :
+ * s'il est fermé ensuite, il ne revient pas tout seul (l'aperçu suit de toute façon la page active).
+ */
+let autoOpened = false;
+function previewIsOpen() {
+  const groups = (vscode.window.tabGroups && vscode.window.tabGroups.all) || [];
+  return groups.some((g) => g.tabs.some((t) => t.input && /markdown\.preview/i.test(String(t.input.viewType || ''))));
+}
+function maybeAutoOpen(editor) {
+  if (autoOpened || !editor || editor.document.languageId !== 'markdown') return;
+  const c = config();
+  if (!c.autoOpen || !c.enabled) return;
+  autoOpened = true;
+  if (previewIsOpen()) return;
+  Promise.resolve(open(editor.document.uri)).catch(() => {});
 }
 
 function forgetDocument(document) {
@@ -352,7 +411,7 @@ const codeActionProvider = {
       fixThis.diagnostics = relevant;
       fixThis.isPreferred = true;
 
-      const fixAll = new vscode.CodeAction('Corriger les en-têtes YAML de tous les fichiers Markdown du dossier…', vscode.CodeActionKind.QuickFix);
+      const fixAll = new vscode.CodeAction('Corriger les en-têtes de page (entre les ---) de tous les fichiers du dossier…', vscode.CodeActionKind.QuickFix);
       fixAll.command = { command: 'dsfrPreview.fixFrontMatterInWorkspace', title: fixAll.title };
       fixAll.diagnostics = relevant;
       actions.push(fixThis, fixAll);
@@ -392,21 +451,83 @@ function pageProblems(document) {
   return list.slice().sort((a, b) => a.range.start.line - b.range.start.line || a.range.start.character - b.range.start.character);
 }
 
-// Compteur de la barre d'état : visible seulement s'il y a des problèmes dans la page active.
+/**
+ * État de la page dans la barre d'état, en couleur : « Page sans erreur » (vert), « N points à vérifier »
+ * (fond orange) ou « N points à corriger » (fond rouge). Un clic liste les points avec leur ligne.
+ */
 function updateProblemsCount() {
   if (!problemsItem) return;
   const editor = vscode.window.activeTextEditor;
-  // Seuls les erreurs et avertissements sont comptés (pas les conseils « information »).
-  const list = (editor && editor.document.languageId === 'markdown' && diagnostics ? diagnostics.get(editor.document.uri) || [] : [])
-    .filter((d) => d.severity === vscode.DiagnosticSeverity.Error || d.severity === vscode.DiagnosticSeverity.Warning);
-  if (!list.length) {
+  if (!editor || editor.document.languageId !== 'markdown' || !isEnabled()) {
     problemsItem.hide();
     return;
   }
+  // Seuls les erreurs et avertissements sont comptés (pas les conseils « information »).
+  const list = (diagnostics ? diagnostics.get(editor.document.uri) || [] : [])
+    .filter((d) => d.severity === vscode.DiagnosticSeverity.Error || d.severity === vscode.DiagnosticSeverity.Warning);
   const errors = list.filter((d) => d.severity === vscode.DiagnosticSeverity.Error).length;
-  problemsItem.text = (errors ? '$(error) ' : '$(warning) ') + list.length + ' DSFR';
-  problemsItem.tooltip = plural(list.length, 'problème') + ' DSFR dans cette page — cliquer pour les lister avec leur ligne';
+  if (!list.length) {
+    problemsItem.text = '$(pass-filled) Page sans erreur';
+    problemsItem.tooltip = 'Aucun point à corriger dans cette page';
+    problemsItem.color = new vscode.ThemeColor('testing.iconPassed');
+    problemsItem.backgroundColor = undefined;
+  } else {
+    problemsItem.text = (errors ? '$(error) ' : '$(warning) ') + plural(list.length, 'point') + (errors ? ' à corriger' : ' à vérifier');
+    problemsItem.tooltip = 'Cliquer pour voir la liste, avec la ligne de chaque point (un clic sur un point y place le curseur)';
+    problemsItem.color = undefined;
+    problemsItem.backgroundColor = new vscode.ThemeColor(errors ? 'statusBarItem.errorBackground' : 'statusBarItem.warningBackground');
+  }
   problemsItem.show();
+}
+
+/* --- Pas-à-pas « Bien démarrer » (contributes.walkthroughs) ---------------------------- */
+const WALKTHROUGH = 'bienDemarrer';
+function walkthroughId(context) {
+  const pkg = (context && context.extension && context.extension.packageJSON) || require('./package.json');
+  return pkg.publisher + '.' + pkg.name + '#' + WALKTHROUGH;
+}
+function openWalkthrough(context) {
+  return vscode.commands.executeCommand('workbench.action.openWalkthrough', walkthroughId(context), false);
+}
+
+/** Page d'essai : nouvelle page non enregistrée, avec quelques composants et une erreur volontaire. */
+async function newPracticePage(context) {
+  const file = context && context.asAbsolutePath ? context.asAbsolutePath(path.join('media', 'walkthrough', 'page-essai.md')) : path.join(__dirname, 'media', 'walkthrough', 'page-essai.md');
+  const content = fs.readFileSync(file, 'utf8');
+  const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content });
+  await vscode.window.showTextDocument(doc, { preview: false });
+  if (isEnabled()) await open(doc.uri);
+}
+
+/**
+ * Commande « Insérer un composant » : liste des composants par familles, avec une explication ;
+ * le composant choisi est inséré au curseur (les clés de l'en-tête de page vont dans l'en-tête).
+ */
+async function insertComponent() {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor || editor.document.languageId !== 'markdown') {
+    vscode.window.showWarningMessage('Ouvrez d\'abord une page Markdown (fichier .md), puis placez le curseur là où insérer le composant.');
+    return;
+  }
+  const menu = buildMenu(require('./snippets/dsfr.json'));
+  const items = menu.map((m) => (m.separator
+    ? { label: m.label, kind: vscode.QuickPickItemKind.Separator }
+    : { label: '$(' + m.icon + ') ' + m.label, description: m.description, detail: m.detail, item: m }));
+  const picked = await vscode.window.showQuickPick(items, {
+    title: 'Insérer un composant DSFR',
+    placeHolder: 'Choisissez un composant (tapez pour chercher : alerte, carte, capture…)',
+    matchOnDescription: true,
+    matchOnDetail: true,
+  });
+  if (!picked || !picked.item) return;
+  const doc = editor.document;
+  const place = headerPlacement(doc.getText().split('\n').map((l) => l.replace(/\r$/, '')), picked.item);
+  if (place && place.error) {
+    vscode.window.showInformationMessage(place.error);
+    return;
+  }
+  const at = place ? new vscode.Position(place.line, place.character) : undefined;
+  await editor.insertSnippet(new vscode.SnippetString(place ? place.text : picked.item.body), at);
 }
 
 /**
@@ -424,7 +545,7 @@ async function listProblems(uri) {
   }
   const problems = pageProblems(document);
   if (!problems.length) {
-    vscode.window.showInformationMessage('DSFR : aucun problème dans cette page.');
+    vscode.window.showInformationMessage('Aucun point à corriger dans cette page.');
     return;
   }
   const S = vscode.DiagnosticSeverity;
@@ -438,7 +559,7 @@ async function listProblems(uri) {
     diagnostic: d,
   }));
   const picked = await vscode.window.showQuickPick(items, {
-    title: 'DSFR : ' + [real ? plural(real, 'problème') : '', tips ? plural(tips, 'conseil') : ''].filter(Boolean).join(' et ') + ' dans cette page',
+    title: [real ? plural(real, 'point') + ' à corriger' : '', tips ? plural(tips, 'conseil') : ''].filter(Boolean).join(' et ') + ' dans cette page',
     placeHolder: 'Choisir un problème pour aller à sa ligne',
     matchOnDetail: true,
   });
@@ -465,7 +586,7 @@ async function fixFrontMatterInWorkspace() {
     if (fixed) todo.push({ uri, fixes: fixed.fixes });
   }
   if (!todo.length) {
-    vscode.window.showInformationMessage('Aucun en-tête YAML à corriger dans les ' + files.length + ' fichiers Markdown du dossier.');
+    vscode.window.showInformationMessage('Aucun en-tête de page à corriger dans les ' + files.length + ' fichiers Markdown du dossier.');
     return;
   }
 
@@ -559,6 +680,10 @@ function activate(context) {
   statusItem.command = 'dsfrPreview.toggle';
   problemsItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 99);
   problemsItem.command = 'dsfrPreview.listProblems';
+  insertItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 101);
+  insertItem.command = 'dsfrPreview.insertComponent';
+  insertItem.text = '$(add) Insérer un composant';
+  insertItem.tooltip = 'Insérer un composant DSFR (alerte, carte, capture…) à l\'endroit du curseur';
   const providers = createAssistProviders(context);
 
   context.subscriptions.push(
@@ -567,10 +692,17 @@ function activate(context) {
       if (e.affectsConfiguration(SECTION)) {
         refreshPreview();
         updateStatus();
+        updateProblemsCount();
+        decorateVisible();
         lintOpenDocuments();
       }
     }),
-    vscode.window.onDidChangeActiveTextEditor(() => { updateStatus(); updateProblemsCount(); }),
+    insertItem,
+    vscode.window.onDidChangeActiveTextEditor((editor) => { updateStatus(); updateProblemsCount(); decorateEditor(editor); maybeAutoOpen(editor); }),
+    vscode.window.onDidChangeVisibleTextEditors ? vscode.window.onDidChangeVisibleTextEditors(decorateVisible) : { dispose() {} },
+    vscode.commands.registerCommand('dsfrPreview.insertComponent', insertComponent),
+    vscode.commands.registerCommand('dsfrPreview.welcome', () => openWalkthrough(context)),
+    vscode.commands.registerCommand('dsfrPreview.newPage', () => newPracticePage(context)),
     vscode.commands.registerCommand('dsfrPreview.toggle', toggle),
     vscode.commands.registerCommand('dsfrPreview.open', open),
     vscode.commands.registerCommand('dsfrPreview.openToSide', openToSide),
@@ -599,6 +731,15 @@ function activate(context) {
     vscode.workspace.onDidSaveTextDocument(() => lintOpenDocuments()),
     { dispose: () => { for (const t of lintTimers.values()) clearTimeout(t); lintTimers.clear(); } }
   );
+  // Première installation : le pas-à-pas « Bien démarrer » s'ouvre une fois
+  if (context.globalState && !context.globalState.get('dsfrPreview.welcomeShown')) {
+    context.globalState.update('dsfrPreview.welcomeShown', true);
+    Promise.resolve(openWalkthrough(context)).catch(() => {});
+  }
+  decorationTypes = createDecorationTypes();
+  for (const t of Object.values(decorationTypes)) context.subscriptions.push(t);
+  decorateVisible();
+  maybeAutoOpen(vscode.window.activeTextEditor);
   updateStatus();
   lintOpenDocuments();
 

@@ -49,7 +49,12 @@ Extension créée par **Bastien** ([@bastienR17](https://github.com/bastienR17))
   une flèche dans la marge replie un bloc (onglets, accordéon, grille…) jusqu'à son `///`.
 - **Aperçu à côté du Markdown** en un clic, ou dans une fenêtre séparée à placer sur un second écran.
   L'aperçu suit la page ouverte : changer d'onglet affiche l'autre page, avec ses accordéons tels qu'on les a laissés.
-- **42 snippets**, dont 13 propres à Doc SIRH, pour insérer les composants sans retenir leur syntaxe.
+- **42 snippets**, dont 13 propres à Doc SIRH, pour insérer les composants sans retenir leur syntaxe, et un
+  bouton **＋ Insérer un composant** qui les présente rangés par familles, avec une phrase d'explication.
+- **Pensé pour les rédacteurs non techniciens** : un pas-à-pas « Bien démarrer » illustré s'ouvre à
+  l'installation, avec une page d'essai ; les messages sont en français simple (ce qui ne va pas, et quoi faire) ;
+  le bas de l'écran indique « ✓ Page sans erreur » en vert, ou « N points à corriger » en rouge ; l'aperçu s'ouvre
+  tout seul et les lignes longues passent à la ligne.
 
 ![Erreurs signalées dans l'aperçu](docs/images/erreurs.png)
 
@@ -63,8 +68,9 @@ Extension créée par **Bastien** ([@bastienR17](https://github.com/bastienR17))
 
 Pour mettre à jour, installer le nouveau `.vsix` de la même façon.
 
-Première utilisation ? Le [guide de prise en main](docs/prise-en-main.md) montre en 5 minutes comment
-ouvrir l'aperçu, insérer un composant et corriger une erreur.
+Première utilisation ? Le pas-à-pas **Bien démarrer** s'ouvre tout seul après l'installation (pour le
+rouvrir : **Ctrl+Maj+P** → **DSFR : Bien démarrer**). Le [guide de prise en main](docs/prise-en-main.md)
+reprend les mêmes étapes par écrit.
 
 ## Utilisation
 
@@ -96,8 +102,9 @@ L'extension analyse la page ouverte (et seulement elle) pendant que vous écrive
 - **Corrections rapides** : ampoule sur la ligne soulignée (ou **Ctrl+.**). Par exemple `type: warnig` →
   `warning`, `open: oui` → `true`, option mal orthographiée renommée, titre ajouté à un accordéon,
   bloc oublié fermé par `///`, classe `fr-btns-group--icon-left` ajoutée à un groupe de boutons.
-- **Localiser les problèmes** : le compteur **⚠ N DSFR** de la barre d'état (ou clic droit dans le Markdown
-  → **DSFR : Problèmes de la page**) liste les problèmes de la page avec leur ligne ; en choisir un place le
+- **Localiser les problèmes** : le bas de l'écran indique **✓ Page sans erreur** (vert), **N points à vérifier**
+  (orange) ou **N points à corriger** (rouge). Un clic (ou clic droit dans le Markdown → **DSFR : Points à
+  corriger dans la page**) liste les points avec leur ligne ; en choisir un place le
   curseur dessus. **F8** passe aussi d'un problème au suivant. L'extension ne modifie jamais la page
   d'elle-même : chaque correction de l'ampoule demande un clic.
 - **Dans l'aperçu**, chaque encadré d'erreur indique la ligne du fichier ; un double-clic sur l'encadré
@@ -105,7 +112,9 @@ L'extension analyse la page ouverte (et seulement elle) pendant que vous écrive
   donne la ligne de ce « ``` » (elle est aussi soulignée dans l'éditeur).
 - **Structure** : un nom de bloc inconnu (`/// alrt` → `alert` ?) et un `///` qui ne ferme aucun bloc
   sont signalés : sur le site, ces lignes s'afficheraient telles quelles.
-- **Couleurs et repli** : les en-têtes `/// nom | titre`, leurs options et les fermetures `///` sont colorés,
+- **Couleurs et repli** : les en-têtes `/// nom | titre`, leurs options et les fermetures `///` sont colorés aux
+  couleurs du DSFR (`///` en rouge Marianne, nom du bloc en bleu France, titre en vert, options en violet, léger
+  fond bleu sur les lignes d'ouverture et de fermeture), quel que soit le thème de VS Code,
   ce qui montre d'un coup d'œil où commence et finit chaque bloc. La flèche dans la marge (ou **Ctrl+Maj+[**,
   **Cmd+Alt+[** sur Mac) replie un bloc jusqu'à sa fermeture.
 - **Autocomplétion** : après `/// `, la liste des blocs ; sur une ligne d'options (4 espaces sous l'en-tête),
@@ -242,7 +251,7 @@ MkDocs ne signale rien : il ignore tout l'en-tête et l'affiche comme du texte e
 L'extension souligne la ligne fautive dans l'éditeur et l'explique dans l'aperçu. Pour corriger :
 
 - **un fichier** : ampoule sur la ligne soulignée (ou **Ctrl+.**) → *Mettre entre guillemets les valeurs qui contiennent « : »* ;
-- **tout le dossier** : palette de commandes (**Ctrl+Maj+P**) → **DSFR : Corriger les en-têtes YAML des fichiers Markdown**.
+- **tout le dossier** : palette de commandes (**Ctrl+Maj+P**) → **DSFR : Corriger les en-têtes de page de tout le dossier**.
   La liste des fichiers concernés est affichée avant toute modification.
 
 Résultat : `title: 'mentor: Déposer les documents'`. Si les en-têtes sont produits par un script,
@@ -259,6 +268,8 @@ le mieux est de corriger aussi ce script pour qu'il mette les valeurs entre guil
 | `dsfrPreview.checkImageAlt` | `true`, `false` | `true` | Signaler les images sans description (conseil) |
 | `dsfrPreview.siteUrl` | adresse | `https://docsirh.e2.rie.gouv.fr` | Adresse du site, pour signaler les liens absolus vers ses pages (le `site_url` du `mkdocs.yml` est prioritaire ; réglage vide : pas de vérification) |
 | `dsfrPreview.mkdocsCompat` | `true`, `false` | `true` | Reproduire les règles Markdown du site |
+| `dsfrPreview.autoOpen` | `true`, `false` | `true` | Ouvrir l'aperçu à côté automatiquement à la première page Markdown ouverte |
+| `dsfrPreview.colors` | `true`, `false` | `true` | Couleurs DSFR des blocs `///` dans l'éditeur (rouge Marianne, bleu France, vert, violet) |
 | `dsfrPreview.openMode` | `side`, `window` | `side` | Où s'ouvre l'aperçu : à côté du Markdown ou dans une fenêtre séparée |
 | `dsfrPreview.pageLayout` | `site`, `content` | `site` | Page entière comme sur le site (en-tête, menu latéral, pied de page), ou contenu seul |
 | `dsfrPreview.desktopWidth` | `true`, `false` | `false` | Page à la largeur d'un ordinateur (1280 px), réduite pour tenir dans l'aperçu |

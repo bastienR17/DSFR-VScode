@@ -46,6 +46,8 @@ lib/
   mkdocs-config.js        lecture facultative du mkdocs.yml (docs_dir, site_url, markdown_extensions, theme)
   site-frame.js           mise en page « comme le site » : en-tête, menu latéral, pied de page du thème
   folding.js              repli des blocs « /// » dans l'éditeur
+  decorations.js          couleurs DSFR des blocs « /// » dans l'éditeur
+  component-menu.js       commande « Insérer un composant » : familles, libellés, place des clés d'en-tête
   assist.js               autocomplétion et aide au survol
   catalog.js              descriptions des blocs et options, liens vers la documentation du thème
   vendor/                 markdown-it, js-yaml et markdown-it-deflist (fichiers tiers, non modifiés)
@@ -58,6 +60,7 @@ samples/                  pages d'exemple (démonstration et erreurs)
 syntaxes/                 coloration des blocs « /// » (grammaire injectée dans le Markdown de VS Code)
 test/                     tests (voir ci-dessous)
 scripts/captures.py       régénère les captures d'écran du README
+scripts/walkthrough-images.js  régénère les illustrations du pas-à-pas (media/walkthrough/)
 scripts/check-upstream.py veille : nouvelle version du thème, de dsfr_structure ou du DSFR (CI du lundi)
 docs/prise-en-main.md     guide de prise en main pour les rédacteurs
 ```
@@ -98,6 +101,8 @@ npm run test:browser   # script de l'aperçu dans Chromium
 | `test/links.js` | Liens, images et ancres introuvables ; identifiants de titres comme MkDocs ; lecture du `mkdocs.yml`. |
 | `test/snippets.js` | Chaque snippet produit un composant valide. |
 | `test/grammar.js` | Coloration des blocs `///` avec la vraie grammaire Markdown de VS Code (`test/fixtures/markdown.tmLanguage.json`, licence MIT) : en-têtes, options, fermetures colorés ; code ignoré. |
+| `test/component-menu.js` | « Insérer un composant » : chaque snippet rangé dans une famille, libellés, clés d'en-tête placées dans l'en-tête. |
+| `test/decorations.js` | Couleurs des blocs `///` : positions de « /// », du nom, du titre et des options ; code et en-tête ignorés. |
 | `test/folding.js` | Repli des blocs `///` : imbrication, code et en-tête YAML ignorés. |
 | `test/site-frame.js` | Mise en page « comme le site » : ordre du gabarit, menu latéral tiré des titres, réglages lus dans le `mkdocs.yml`, échappement. |
 | `test/samples.js` | `demo.md` ne signale aucune erreur ; `erreurs.md` en signale une par section, chaque encadré à la ligne du problème. |
@@ -138,8 +143,8 @@ nouvelle version est sortie (avertissement jaune, sans faire échouer les tests)
 2. Si le rendu a changé, régénérer les captures : `python3 scripts/captures.py`.
 3. Créer et pousser une étiquette (`v` suivi du numéro, sans point après le `v`) :
    ```bash
-   git tag v0.10.1
-   git push origin v0.10.1
+   git tag v0.11.0
+   git push origin v0.11.0
    ```
 4. La CI teste, construit le `.vsix` et le joint à une Release GitHub.
 

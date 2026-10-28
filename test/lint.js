@@ -122,7 +122,7 @@ clean('```\n///\n/// alrt\n```\n');
 src = '/// row\n/// col\nA\n///\n/// row\n/// col\nB\n///\n///\n';
 issue = only(src);
 assert.strictEqual(issue.code, 'dsfr-unclosed');
-assert(issue.message.includes('le « /// row » de la ligne 5 se retrouve imbriqué dedans'), issue.message);
+assert(issue.message.includes('il manque une ligne « /// » avant la ligne 5, où commence le « /// row » suivant'), issue.message);
 assert.deepStrictEqual(issue.fixes.map((f) => f.title), ['Fermer le bloc par « /// » juste avant la ligne 5']);
 clean(fixed(src, issue));
 // Cas réel (page Estève) : ligne vide entre les deux lignes de cartes ; « /// » ajouté après la dernière fermeture

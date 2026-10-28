@@ -2,6 +2,30 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## 0.11.0 — octobre 2026
+
+Version pensée pour les rédacteurs qui n'ont pas l'habitude de VS Code.
+
+### Ajouts
+- **Pas-à-pas « Bien démarrer »** : 5 étapes illustrées (ouvrir une page, voir l'aperçu, insérer un composant,
+  corriger une erreur, régler l'affichage), avec un bouton par étape. Il s'ouvre à la première installation ;
+  pour le rouvrir : **DSFR : Bien démarrer**. Commande **DSFR : Créer une page d'essai** : une page non
+  enregistrée, avec une erreur volontaire à corriger, pour tout essayer sans risque.
+- **＋ Insérer un composant** (bas de l'écran, clic droit ou palette) : les composants rangés par familles
+  (Doc SIRH, messages, cartes et tuiles, contenus repliables, boutons, images et tableaux, en-tête de page),
+  avec une icône et une phrase d'explication. Les blocs de l'en-tête de page se placent tout seuls en haut.
+- **Couleurs DSFR dans l'éditeur**, quel que soit le thème : `///` en rouge Marianne, nom du bloc en bleu France,
+  titre en vert, options en violet, léger fond bleu sur les lignes d'ouverture et de fermeture (réglage `dsfrPreview.colors`).
+- **L'aperçu s'ouvre tout seul** à la première page Markdown ouverte (réglage `dsfrPreview.autoOpen`).
+- Les longues lignes passent à la ligne dans les fichiers Markdown.
+
+### Modifications
+- **Messages en français simple** : ce qui ne va pas, puis quoi faire (« il manque la ligne `///` qui marque sa
+  fin… l'ampoule 💡 peut le faire »), sans jargon technique. Encadrés de l'aperçu : « À corriger »,
+  « Composant mal écrit », « Différent sur le site ».
+- **Bas de l'écran en couleur** : « ✓ Page sans erreur » en vert, « N points à vérifier » sur fond orange,
+  « N points à corriger » sur fond rouge ; un clic les liste avec leur ligne.
+
 ## 0.10.1 — octobre 2026
 
 ### Corrections

@@ -11,12 +11,16 @@ fichier `.vsix` : rien d'autre à installer (ni Python, ni MkDocs).
    **Installer à partir d'un VSIX…** → choisir le fichier.
 3. Recharger la fenêtre : **Ctrl+Maj+P** → taper `Reload Window` → **Entrée**.
 
-L'indicateur **DSFR** apparaît en bas, dans la barre d'état : le rendu est actif.
+Le pas-à-pas **Bien démarrer** s'ouvre alors tout seul : suivez ses 5 étapes illustrées, avec une page d'essai
+où tout peut être testé sans risque. Pour le rouvrir plus tard : **Ctrl+Maj+P** → **DSFR : Bien démarrer**.
+
+En bas de l'écran apparaissent **Aperçu DSFR**, **＋ Insérer un composant** et l'état de la page
+(**✓ Page sans erreur** en vert, ou **N points à corriger** en rouge).
 
 ## 2. Ouvrir l'aperçu
 
-Ouvrir une page `.md` (par exemple un mode opératoire), puis cliquer sur le bouton **Ouvrir l'aperçu DSFR**
-en haut à droite de l'éditeur, ou **Ctrl+Alt+D** (**Cmd+Maj+Alt+D** sur Mac).
+Ouvrir une page `.md` (par exemple un mode opératoire) : l'aperçu s'ouvre tout seul à côté. S'il a été fermé,
+cliquer sur le bouton **Ouvrir l'aperçu DSFR** en haut à droite de l'éditeur, ou **Ctrl+Alt+D** (**Cmd+Maj+Alt+D** sur Mac).
 
 L'écran se partage : le Markdown à gauche, la page telle qu'elle s'affichera sur Doc SIRH à droite.
 L'aperçu se met à jour à chaque frappe, et suit la page ouverte quand on change d'onglet.
@@ -34,7 +38,12 @@ marge replie un bloc jusqu'à son `///` : pratique pour s'y retrouver dans une l
 
 ## 3. Insérer un composant
 
-Sur une ligne vide, taper `dsfr-` : la liste des composants s'ouvre toute seule.
+Placer le curseur là où insérer le composant, puis cliquer sur **＋ Insérer un composant** en bas de l'écran
+(ou clic droit → **DSFR : Insérer un composant**) : la liste présente les composants par familles, avec une
+phrase d'explication. Les blocs de l'en-tête de page (bandeau, fil d'Ariane, sommaire) se placent tout seuls
+au bon endroit, en haut de la page.
+
+Plus rapide une fois l'habitude prise : sur une ligne vide, taper `dsfr-` ; la liste s'ouvre aussi.
 
 | Pour… | Taper |
 |---|---|
@@ -68,8 +77,8 @@ Pour corriger :
 
 L'extension ne modifie jamais la page toute seule : chaque correction demande un clic.
 
-Pour retrouver tous les problèmes de la page : cliquer sur le compteur **⚠ N DSFR** en bas, ou clic droit
-dans le Markdown → **DSFR : Problèmes de la page**. Choisir un problème place le curseur dessus.
+Pour retrouver tous les problèmes de la page : cliquer sur **N points à corriger** en bas, ou clic droit
+dans le Markdown → **DSFR : Points à corriger dans la page**. Choisir un point place le curseur dessus.
 Dans l'aperçu, un **double-clic** sur un encadré d'erreur ramène aussi à la bonne ligne.
 
 ![Erreurs signalées dans l'aperçu](images/erreurs.png)
@@ -81,7 +90,7 @@ Dans l'aperçu, un **double-clic** sur un encadré d'erreur ramène aussi à la 
 | « Bloc jamais fermé » | un `///` oublié à la fin d'un bloc, ou un « ``` » en trop plus haut | ampoule → *Fermer le bloc*, ou supprimer le « ``` » indiqué dans le message |
 | Option ou valeur invalide | faute de frappe (`pcto`, `warnig`) ou mot français (`oui`) | ampoule → la valeur proposée |
 | Options du bloc ignorées | options pas indentées de **4 espaces** sous `/// nom` | ré-indenter les lignes d'options |
-| En-tête affiché en texte en haut de la page | une valeur de l'en-tête YAML contient « : » | ampoule → *Mettre entre guillemets…* |
+| En-tête affiché en texte en haut de la page | une valeur de l'en-tête de la page (entre les `---`) contient « : » | ampoule → *Mettre entre guillemets…* |
 | Mot en gras qui affiche `**` sur le site | espace avant les `**` fermantes (`**texte **suite`) | ampoule → *Coller les \*\* au mot* |
 | Titre affiché en texte dans le wiki GitLab | pas d'espace après les `#` (`###Titre`) | ampoule → *Ajouter un espace* : `### Titre` |
 | Puces affichées en texte | liste collée au paragraphe, sans ligne vide avant | ajouter une ligne vide avant la liste |
