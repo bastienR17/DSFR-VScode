@@ -46,7 +46,7 @@ function config() {
     mkdocsCompat: c.get('mkdocsCompat', true),
     openMode: c.get('openMode', 'side'),
     checkLinks: c.get('checkLinks', true),
-    checkImageAlt: c.get('checkImageAlt', true),
+    checkImageAlt: c.get('checkImageAlt', false),
     siteUrl: c.get('siteUrl', 'https://docsirh.e2.rie.gouv.fr'),
     pageLayout: c.get('pageLayout', 'site'),
     desktopWidth: c.get('desktopWidth', false),

@@ -311,6 +311,8 @@ async function lintVia(document) {
   const tipText = '# Page\n\n![](img.png) voir [Autre](https://docsirh.e2.rie.gouv.fr/autre/) et [PDF](https://docsirh.e2.rie.gouv.fr/fichiers/a.pdf)\n';
   fs.writeFileSync(path.join(site, 'docs', 'img.png'), '');
   const tipDoc = textDocument(new Uri(path.join(site, 'docs', 'conseils.md')), tipText);
+  assert.deepStrictEqual((await lintVia(tipDoc)).map((d) => d.code), ['dsfr-absolute-link'], 'images sans description : non signalées par défaut');
+  settings.checkImageAlt = true;
   const tipDiags = await lintVia(tipDoc);
   assert.deepStrictEqual(tipDiags.map((d) => [d.code, d.severity]), [['dsfr-img-alt', 2], ['dsfr-absolute-link', 2]]);
   const tipActions = codeActionProvider.provideCodeActions(tipDoc, tipDiags[1].range, { diagnostics: [tipDiags[1]] });
@@ -333,8 +335,6 @@ async function lintVia(document) {
   assert.strictEqual(statusItems[1].text, '$(warning) 1 point à vérifier');
   assert.strictEqual(statusItems[1].backgroundColor.id, 'statusBarItem.warningBackground');
   vscode.window.activeTextEditor = null;
-  settings.checkImageAlt = false;
-  assert.deepStrictEqual((await lintVia(tipDoc)).map((d) => d.code), ['dsfr-absolute-link'], 'réglage checkImageAlt coupé');
   delete settings.checkImageAlt;
   fs.rmSync(site, { recursive: true, force: true });
 

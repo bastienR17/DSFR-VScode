@@ -128,9 +128,7 @@ L'extension analyse la page ouverte (et seulement elle) pendant que vous écrive
   affichés au lieu du gras, titre coupé en deux (la fin du titre, en minuscule, passée à la ligne suivante).
   Chacun a sa correction dans l'ampoule. Une ligne de grille `/// row` non fermée avant la suivante est
   signalée avec la ligne exacte où ajouter `///`.
-- **Conseils** (soulignés en pointillés bleus, non comptés dans la barre d'état) : image sans description
-  (`![](…)` vide ou `<img>` sans `alt`, obligatoire pour l'accessibilité RGAA ; l'ampoule ajoute `alt=""`
-  à compléter) et lien absolu vers une page du site (`https://docsirh.e2.rie.gouv.fr/Rubrique/Page/`) :
+- **Conseils** (soulignés en pointillés bleus, non comptés dans la barre d'état) : lien absolu vers une page du site (`https://docsirh.e2.rie.gouv.fr/Rubrique/Page/`) :
   l'ampoule propose le lien relatif vers le fichier `.md` quand il est trouvé dans le dossier. Les liens
   vers `…/fichiers/` ne sont pas concernés.
 
@@ -263,7 +261,7 @@ le mieux est de corriger aussi ce script pour qu'il mette les valeurs entre guil
 | `dsfrPreview.theme` | `auto`, `light`, `dark` | `auto` | Thème DSFR (`auto` suit VS Code) |
 | `dsfrPreview.showErrors` | `true`, `false` | `true` | Afficher les encadrés d'erreur dans l'aperçu et souligner les problèmes dans l'éditeur |
 | `dsfrPreview.checkLinks` | `true`, `false` | `true` | Souligner les liens, images et ancres introuvables, et les syntaxes non activées dans le `mkdocs.yml` |
-| `dsfrPreview.checkImageAlt` | `true`, `false` | `true` | Signaler les images sans description (conseil) |
+| `dsfrPreview.checkImageAlt` | `true`, `false` | `false` | Signaler les images sans description (conseil d'accessibilité, coupé par défaut) |
 | `dsfrPreview.siteUrl` | adresse | `https://docsirh.e2.rie.gouv.fr` | Adresse du site, pour signaler les liens absolus vers ses pages (le `site_url` du `mkdocs.yml` est prioritaire ; réglage vide : pas de vérification) |
 | `dsfrPreview.mkdocsCompat` | `true`, `false` | `true` | Reproduire les règles Markdown du site |
 | `dsfrPreview.autoOpen` | `true`, `false` | `true` | Ouvrir l'aperçu à côté automatiquement à la première page Markdown ouverte |

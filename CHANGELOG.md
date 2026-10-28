@@ -2,6 +2,11 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## 0.11.2 — octobre 2026
+
+### Modifications
+- Les images sans description ne sont plus signalées par défaut (réglage `dsfrPreview.checkImageAlt` pour les réactiver).
+
 ## 0.11.1 — octobre 2026
 
 Version pensée pour les rédacteurs qui n'ont pas l'habitude de VS Code.
