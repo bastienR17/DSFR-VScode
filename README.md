@@ -51,11 +51,15 @@ Extension créée par **Bastien** ([@bastienR17](https://github.com/bastienR17))
   L'aperçu suit la page ouverte : changer d'onglet affiche l'autre page, avec ses accordéons tels qu'on les a laissés.
 - **42 snippets**, dont 13 propres à Doc SIRH, pour insérer les composants sans retenir leur syntaxe, et un
   bouton **＋ Insérer un composant** qui les présente rangés par familles, avec une phrase d'explication.
+- **Une boîte à composants** dans la barre de gauche (icône **DSFR**) : chaque composant avec une miniature de son
+  rendu, une recherche, et un clic pour l'insérer dans la page.
 - **Pensé pour les rédacteurs non techniciens** : les messages sont en français simple (ce qui ne va pas, et quoi faire) ;
   le bas de l'écran indique « ✓ Page sans erreur » en vert, ou « N points à corriger » en rouge ; l'aperçu s'ouvre
   tout seul et les lignes longues passent à la ligne.
 
 ![Erreurs signalées dans l'aperçu](docs/images/erreurs.png)
+
+<img src="docs/images/panneau.png" alt="La boîte à composants : miniatures des composants Doc SIRH, rangés par familles" width="340">
 
 ## Installation
 

@@ -48,6 +48,7 @@ lib/
   folding.js              repli des blocs « /// » dans l'éditeur
   decorations.js          couleurs DSFR des blocs « /// » dans l'éditeur
   component-menu.js       commande « Insérer un composant » : familles, libellés, place des clés d'en-tête
+  component-panel.js      boîte à composants de la barre latérale (HTML de la vue : vignettes, recherche)
   assist.js               autocomplétion et aide au survol
   catalog.js              descriptions des blocs et options, liens vers la documentation du thème
   vendor/                 markdown-it, js-yaml et markdown-it-deflist (fichiers tiers, non modifiés)
@@ -55,11 +56,14 @@ media/
   dsfr/                   CSS, polices, icônes et pictogrammes du DSFR (copiés du thème mkdocs-dsfr)
   dsfr-preview.css        ajustements de l'aperçu et style des encadrés d'erreur
   dsfr-preview.js         script de l'aperçu : thème, accordéons, onglets, sommaire
+  thumbnails/             vignettes de la boîte à composants (une par snippet, générées)
+  dsfr-activity.svg       icône DSFR de la barre d'activité
 snippets/dsfr.json        snippets d'insertion des composants
 samples/                  pages d'exemple (démonstration et erreurs)
 syntaxes/                 coloration des blocs « /// » (grammaire injectée dans le Markdown de VS Code)
 test/                     tests (voir ci-dessous)
 scripts/captures.py       régénère les captures d'écran du README
+scripts/thumbnails.js     régénère les vignettes de la boîte à composants (Playwright pour Node)
 scripts/check-upstream.py veille : nouvelle version du thème, de dsfr_structure ou du DSFR (CI du lundi)
 docs/prise-en-main.md     guide de prise en main pour les rédacteurs
 ```
@@ -101,12 +105,14 @@ npm run test:browser   # script de l'aperçu dans Chromium
 | `test/snippets.js` | Chaque snippet produit un composant valide. |
 | `test/grammar.js` | Coloration des blocs `///` avec la vraie grammaire Markdown de VS Code (`test/fixtures/markdown.tmLanguage.json`, licence MIT) : en-têtes, options, fermetures colorés ; code ignoré. |
 | `test/component-menu.js` | « Insérer un composant » : chaque snippet rangé dans une famille, libellés, clés d'en-tête placées dans l'en-tête. |
+| `test/component-panel.js` | Boîte à composants : une carte et une vignette par snippet, une couleur par famille, politique de sécurité (CSP) et jeton du script. |
 | `test/decorations.js` | Couleurs des blocs `///` : positions de « /// », du nom, du titre et des options ; code et en-tête ignorés. |
 | `test/folding.js` | Repli des blocs `///` : imbrication, code et en-tête YAML ignorés. |
 | `test/site-frame.js` | Mise en page « comme le site » : ordre du gabarit, menu latéral tiré des titres, réglages lus dans le `mkdocs.yml`, échappement. |
 | `test/samples.js` | `demo.md` ne signale aucune erreur ; `erreurs.md` en signale une par section, chaque encadré à la ligne du problème. |
-| `test/extension-host.js` | `extension.js` avec une API VS Code simulée : réglages, commandes déclarées, aperçu à côté, fenêtre séparée, soulignements, corrections, autocomplétion et survol. |
+| `test/extension-host.js` | `extension.js` avec une API VS Code simulée : réglages, commandes déclarées, aperçu à côté, fenêtre séparée, soulignements, corrections, boîte à composants (insertion dans la dernière page Markdown utilisée), autocomplétion et survol. |
 | `test/preview_browser.py` | `dsfr-preview.js` dans Chromium, avec le chargement différé de VS Code et le passage d'une page à l'autre. |
+| `test/panel_browser.py` | Boîte à composants dans Chromium, thèmes clair et sombre : vignettes chargées, couleurs, recherche, clic qui demande l'insertion. |
 
 Pour comparer une page réelle : `cd test && python3 page.py chemin/vers/page.md`
 (les deux rendus sont écrits dans `/tmp/page_py.html` et `/tmp/page_js.html`).
@@ -139,10 +145,12 @@ nouvelle version est sortie (avertissement jaune, sans faire échouer les tests)
 ## Publier une version
 
 1. Mettre à jour `version` dans `package.json` et ajouter une entrée dans `CHANGELOG.md`.
-2. Si le rendu a changé, régénérer les captures : `python3 scripts/captures.py`.
+2. Si le rendu a changé, régénérer les captures : `python3 scripts/captures.py`. Après l'ajout ou la
+   modification d'un snippet, régénérer les vignettes : `node scripts/thumbnails.js` (nécessite
+   `npm install --no-save playwright && npx playwright install chromium`) ; `test/component-panel.js` échoue s'il en manque une.
 3. Créer et pousser une étiquette (`v` suivi du numéro, sans point après le `v`) :
    ```bash
-   git tag v0.11.2
+   git tag v0.12.0
    git push origin v0.11.2
    ```
 4. La CI teste, construit le `.vsix` et le joint à une Release GitHub.

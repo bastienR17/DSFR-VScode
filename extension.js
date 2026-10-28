@@ -28,6 +28,7 @@ const { checkQuality } = require('./lib/quality');
 const { foldingRanges } = require('./lib/folding');
 const { DOC_SIRH } = require('./lib/site-frame');
 const { buildMenu, headerPlacement } = require('./lib/component-menu');
+const { panelHtml } = require('./lib/component-panel');
 const { blockDecorations, COLORS } = require('./lib/decorations');
 
 const SECTION = 'dsfrPreview';
@@ -501,14 +502,61 @@ async function insertComponent() {
     matchOnDetail: true,
   });
   if (!picked || !picked.item) return;
+  await insertMenuItem(editor, picked.item);
+}
+
+/** Insère un composant du menu dans l'éditeur (au curseur, ou dans l'en-tête de page pour ses clés). */
+async function insertMenuItem(editor, item) {
   const doc = editor.document;
-  const place = headerPlacement(doc.getText().split('\n').map((l) => l.replace(/\r$/, '')), picked.item);
+  const place = headerPlacement(doc.getText().split('\n').map((l) => l.replace(/\r$/, '')), item);
   if (place && place.error) {
     vscode.window.showInformationMessage(place.error);
-    return;
+    return false;
   }
   const at = place ? new vscode.Position(place.line, place.character) : undefined;
-  await editor.insertSnippet(new vscode.SnippetString(place ? place.text : picked.item.body), at);
+  return editor.insertSnippet(new vscode.SnippetString(place ? place.text : item.body), at);
+}
+
+/* ------------------------------------------------------------------ */
+/* Panneau « Composants » de la barre latérale (lib/component-panel.js) */
+/* ------------------------------------------------------------------ */
+
+// Dernière page Markdown utilisée : un clic dans le panneau lui donne le focus, l'éditeur n'est
+// alors plus « actif » ; on insère donc dans la dernière page Markdown où se trouvait le curseur.
+let lastMarkdownEditor = null;
+function trackMarkdownEditor(editor) {
+  if (editor && editor.document && editor.document.languageId === 'markdown') lastMarkdownEditor = editor;
+}
+
+function createComponentPanel(context) {
+  const thumbsDir = vscode.Uri.file(context.asAbsolutePath(path.join('media', 'thumbnails')));
+  const fs = require('fs');
+  return {
+    resolveWebviewView(view) {
+      view.webview.options = { enableScripts: true, localResourceRoots: [thumbsDir] };
+      const nonce = require('crypto').randomBytes(16).toString('base64');
+      view.webview.html = panelHtml({
+        snippets: require('./snippets/dsfr.json'),
+        cspSource: view.webview.cspSource,
+        nonce,
+        thumb: (prefix) => (fs.existsSync(path.join(thumbsDir.fsPath, prefix + '.jpg'))
+          ? String(view.webview.asWebviewUri(vscode.Uri.joinPath(thumbsDir, prefix + '.jpg'))) : null),
+      });
+      view.webview.onDidReceiveMessage(async (msg) => {
+        if (!msg || msg.type !== 'insert') return;
+        const item = buildMenu(require('./snippets/dsfr.json')).find((m) => !m.separator && m.prefix === msg.prefix);
+        if (!item) return;
+        const doc = lastMarkdownEditor && !lastMarkdownEditor.document.isClosed ? lastMarkdownEditor.document : null;
+        if (!doc) {
+          vscode.window.showWarningMessage('Ouvrez d\'abord une page Markdown (fichier .md) et placez le curseur là où insérer le composant.');
+          return;
+        }
+        // On redonne la main à la page (au même endroit), puis on insère
+        const editor = await vscode.window.showTextDocument(doc, { viewColumn: lastMarkdownEditor.viewColumn, preserveFocus: false, preview: false });
+        await insertMenuItem(editor, item);
+      });
+    },
+  };
 }
 
 /**
@@ -679,7 +727,7 @@ function activate(context) {
       }
     }),
     insertItem,
-    vscode.window.onDidChangeActiveTextEditor((editor) => { updateStatus(); updateProblemsCount(); decorateEditor(editor); maybeAutoOpen(editor); }),
+    vscode.window.onDidChangeActiveTextEditor((editor) => { trackMarkdownEditor(editor); updateStatus(); updateProblemsCount(); decorateEditor(editor); maybeAutoOpen(editor); }),
     vscode.window.onDidChangeVisibleTextEditors ? vscode.window.onDidChangeVisibleTextEditors(decorateVisible) : { dispose() {} },
     vscode.commands.registerCommand('dsfrPreview.insertComponent', insertComponent),
     vscode.commands.registerCommand('dsfrPreview.toggle', toggle),
@@ -688,6 +736,8 @@ function activate(context) {
     vscode.commands.registerCommand('dsfrPreview.openInNewWindow', openInNewWindow),
     vscode.commands.registerCommand('dsfrPreview.fixFrontMatterInWorkspace', fixFrontMatterInWorkspace),
     vscode.commands.registerCommand('dsfrPreview.listProblems', listProblems),
+    vscode.window.registerWebviewViewProvider('dsfrPreview.components', createComponentPanel(context)),
+    vscode.commands.registerCommand('dsfrPreview.showComponents', () => vscode.commands.executeCommand('dsfrPreview.components.focus')),
     problemsItem,
     vscode.languages.onDidChangeDiagnostics(updateProblemsCount),
     diagnostics = vscode.languages.createDiagnosticCollection('dsfr'),
@@ -710,6 +760,7 @@ function activate(context) {
     vscode.workspace.onDidSaveTextDocument(() => lintOpenDocuments()),
     { dispose: () => { for (const t of lintTimers.values()) clearTimeout(t); lintTimers.clear(); } }
   );
+  trackMarkdownEditor(vscode.window.activeTextEditor);
   decorationTypes = createDecorationTypes();
   for (const t of Object.values(decorationTypes)) context.subscriptions.push(t);
   decorateVisible();

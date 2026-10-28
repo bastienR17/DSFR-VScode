@@ -2,6 +2,17 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## 0.12.0 — octobre 2026
+
+### Ajouts
+- **Boîte à composants** : une icône **DSFR** dans la barre de gauche de VS Code ouvre le panneau « Composants ».
+  Chaque composant y est montré avec une **miniature** de son rendu, son nom et une phrase d'explication, rangé
+  par familles de couleur (Doc SIRH, messages, cartes et tuiles, contenus repliables, boutons, images et
+  tableaux, en-tête de page). Une recherche filtre la liste (« alerte », « carte », « capture »…, accents
+  facultatifs). **Un clic insère le composant** dans la page, à l'endroit du curseur ; les blocs de l'en-tête de
+  page se placent tout seuls en haut. Le panneau suit les couleurs du thème de VS Code, clair ou sombre.
+- Commande **DSFR : Afficher la boîte à composants**.
+
 ## 0.11.2 — octobre 2026
 
 ### Modifications

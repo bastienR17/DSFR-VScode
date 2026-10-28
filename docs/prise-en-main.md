@@ -40,6 +40,11 @@ Placer le curseur là où insérer le composant, puis cliquer sur **＋ Insérer
 phrase d'explication. Les blocs de l'en-tête de page (bandeau, fil d'Ariane, sommaire) se placent tout seuls
 au bon endroit, en haut de la page.
 
+**Avec les miniatures** : cliquer sur l'icône **DSFR** (quatre carrés) dans la barre tout à gauche de VS Code.
+La boîte à composants montre chaque composant tel qu'il s'affichera sur le site. Placer le curseur dans la page,
+puis cliquer sur un composant pour l'insérer. La case du haut permet de chercher (« alerte », « carte »,
+« capture »…).
+
 Plus rapide une fois l'habitude prise : sur une ligne vide, taper `dsfr-` ; la liste s'ouvre aussi.
 
 | Pour… | Taper |

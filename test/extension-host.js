@@ -9,8 +9,14 @@ const commands = {};
 const workspaceSettings = {};
 const updates = [];
 const calls = [];
+const webviewProviders = {};
 let oldVsCode = false;
-class Uri { constructor(p) { this.fsPath = p; this.scheme = 'file'; } toString() { return 'file://' + this.fsPath; } }
+class Uri {
+  constructor(p) { this.fsPath = p; this.scheme = 'file'; }
+  toString() { return 'file://' + this.fsPath; }
+  static file(p) { return new Uri(p); }
+  static joinPath(u, ...parts) { return new Uri(path.join(u.fsPath, ...parts)); }
+}
 // Éditeurs affichés (colonne → document) et suivi du focus, pour vérifier la disposition côte à côte
 const shown = [];
 let focused = null;
@@ -110,6 +116,7 @@ const vscode = {
     onDidChangeVisibleTextEditors: noop,
     createTextEditorDecorationType: (opts) => { const t = { opts, dispose() {} }; decorationTypes.push(t); return t; },
     tabGroups: { all: [] },
+    registerWebviewViewProvider: (id, provider) => { webviewProviders[id] = provider; return { dispose() {} }; },
     showInformationMessage: async (message) => { messages.push(message); return undefined; },
     showWarningMessage: async (message, options) => { messages.push(message); return options && options.modal ? modalAnswer : undefined; },
     showErrorMessage: async () => undefined,
@@ -385,6 +392,43 @@ async function lintVia(document) {
   await commands['dsfrPreview.insertComponent']();
   assert(messages[0].startsWith('Ouvrez d\'abord une page Markdown'));
 
+  // Panneau « Composants » : vignettes, puis un clic insère dans la dernière page Markdown utilisée
+  assert(manifest.views.dsfr.some((v) => v.id === 'dsfrPreview.components' && v.type === 'webview'));
+  assert(fs.existsSync(path.join(__dirname, '..', manifest.viewsContainers.activitybar[0].icon)));
+  const panel = webviewProviders['dsfrPreview.components'];
+  let onMessage = null;
+  const view = { webview: {
+    cspSource: 'vscode-resource:', options: null, html: '',
+    asWebviewUri: (u) => 'vscode-resource:' + u.fsPath,
+    onDidReceiveMessage: (fn) => { onMessage = fn; return { dispose() {} }; },
+  } };
+  panel.resolveWebviewView(view);
+  assert(view.webview.options.enableScripts && view.webview.options.localResourceRoots[0].fsPath.endsWith(path.join('media', 'thumbnails')));
+  assert(/<img[^>]+src="vscode-resource:[^"]+thumbnails[\\/]dsfr-alerte\.jpg"/.test(view.webview.html), 'vignette de l\'alerte');
+  assert(/Content-Security-Policy[^>]+script-src 'nonce-/.test(view.webview.html));
+  const panelDoc = textDocument(new Uri('/tmp/other/panneau.md'), '# Titre\n');
+  settings.autoOpen = false;
+  activeEditorListener({ document: panelDoc, viewColumn: 1 });
+  activeEditorListener(undefined);
+  delete settings.autoOpen; // clic dans le panneau : plus d'éditeur actif
+  const showDoc = vscode.window.showTextDocument;
+  const panelInserted = [];
+  vscode.window.showTextDocument = async (document, opts) => ({ document, viewColumn: opts.viewColumn, insertSnippet: async (s, at) => { panelInserted.push([document.uri.fsPath, s.value, at, opts.viewColumn]); return true; } });
+  await onMessage({ type: 'insert', prefix: 'dsfr-alerte' });
+  assert.strictEqual(panelInserted.length, 1);
+  assert(panelInserted[0][0] === '/tmp/other/panneau.md' && panelInserted[0][1].startsWith('/// alert | ') && panelInserted[0][3] === 1, 'alerte insérée dans la page');
+  await onMessage({ type: 'insert', prefix: 'dsfr-bandeau' });
+  assert.strictEqual(panelInserted[1][2].line, 0, 'bandeau : nouvel en-tête en haut de la page');
+  await onMessage({ type: 'insert', prefix: 'inconnu' });
+  assert.strictEqual(panelInserted.length, 2);
+  panelDoc.isClosed = true;
+  messages.length = 0;
+  await onMessage({ type: 'insert', prefix: 'dsfr-alerte' });
+  assert(messages[0].startsWith('Ouvrez d\'abord une page Markdown') && panelInserted.length === 2, 'page fermée : message');
+  vscode.window.showTextDocument = showDoc;
+  await commands['dsfrPreview.showComponents']();
+  assert(calls.includes('dsfrPreview.components.focus'));
+
   // Autocomplétion et survol branchés sur l'éditeur
   assert.deepStrictEqual(completionProvider.triggers, ['/', ' ', ':', '-']);
   // « dsfr- » : la liste des snippets s'ouvre à la frappe du « - », pas en double sur Ctrl+Espace
@@ -466,5 +510,5 @@ async function lintVia(document) {
   assert.deepStrictEqual(saved.sort(), ['a.md', 'b.md']);
   fs.rmSync(tmp, { recursive: true, force: true });
 
-  console.log('Extension (VS Code simulé) : rendu, bascule, aperçu à côté, nouvelle fenêtre, blocs, en-têtes et liens soulignés, corrections à la demande, liste des problèmes, autocomplétion et survol OK');
+  console.log('Extension (VS Code simulé) : rendu, bascule, aperçu à côté, nouvelle fenêtre, blocs, en-têtes et liens soulignés, corrections à la demande, liste des problèmes, panneau des composants, autocomplétion et survol OK');
 })().catch((e) => { console.error(e); process.exit(1); });
