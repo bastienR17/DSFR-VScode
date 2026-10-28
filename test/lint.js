@@ -118,6 +118,17 @@ assert.deepStrictEqual(lint('/// alert | A\n    type: rouge\nTexte\n///\n').map(
 // … ni un « /// » dans un bloc de code
 clean('```\n///\n/// alrt\n```\n');
 
+// Ligne de grille non fermée avant la suivante (page de rubrique réelle) : fermeture juste avant la ligne suivante
+src = '/// row\n/// col\nA\n///\n/// row\n/// col\nB\n///\n///\n';
+issue = only(src);
+assert.strictEqual(issue.code, 'dsfr-unclosed');
+assert(issue.message.includes('le « /// row » de la ligne 5 se retrouve imbriqué dedans'), issue.message);
+assert.deepStrictEqual(issue.fixes.map((f) => f.title), ['Fermer le bloc par « /// » juste avant la ligne 5']);
+clean(fixed(src, issue));
+// Même nom plus profond (dans une colonne) : imbrication normale, pas de cette indication
+issue = only('/// row\n/// col\n/// row\n/// col\nB\n///\n///\n///\n');
+assert(!issue.message.includes('imbriqué dedans'), issue.message);
+
 // Bouton à icône dans un groupe : classe ajoutée au groupe
 src = '/// buttons\n/// button | Télécharger\n    icon: download-line\n    target: /doc.pdf\n///\n///\n';
 issue = only(src);
@@ -139,6 +150,19 @@ issue = only(src);
 assert.strictEqual(issue.code, 'dsfr-list-indent');
 assert.strictEqual(issue.range.line, 2);
 assert.deepStrictEqual(createLinter({ mkdocsCompat: () => false })(src), [], 'réglage mkdocsCompat coupé : pas d\'avertissement');
+
+// Sous-liste à 2 espaces : aplatie comme sur le site ; correction : l'indenter de 4 espaces
+src = '- **D :** droit\n  - **D = 20** si 4 jours\n  - **D = 22.5** si 4,5 jours\n- **J :** jours\n';
+issue = only(src);
+assert.strictEqual(issue.code, 'dsfr-list-indent');
+assert.strictEqual(issue.range.line, 1);
+assert.strictEqual(fixed(src, issue), '- **D :** droit\n    - **D = 20** si 4 jours\n    - **D = 22.5** si 4,5 jours\n- **J :** jours\n');
+clean(fixed(src, issue));
+// Sous-sous-liste : chaque niveau passe à 4 espaces
+src = '- a\n  - b\n    - c\n- d\n';
+issue = only(src);
+assert.strictEqual(fixed(src, issue), '- a\n    - b\n        - c\n- d\n');
+clean(fixed(src, issue));
 
 // En-tête de page : bandeau et fil d'Ariane, soulignés à leur ligne dans l'en-tête
 src = '---\ntitle: Page\nnotice:\n  type: warnng\n  description: Texte\n---\n\n# Page\n';

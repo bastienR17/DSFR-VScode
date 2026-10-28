@@ -62,5 +62,14 @@
 "Un paragraphe\n{: .fr-text--lead }\n",
 "Un [lien](https://x.fr){: target=_blank } dans le texte\n",
 "Terme\n:   Sa définition\n\nAutre terme\n:   Autre définition\n",
-"Texte **gras**{: .fr-text--bold } ici\n"
+"Texte **gras**{: .fr-text--bold } ici\n",
+"- a\n  - b\n  - c\n- d\n",
+"1. a\n   - b\n2. c\n",
+"- a\n  - b\n    - c\n- d\n",
+"- a\n    - b\n      - c\n",
+"- **D :** Droit annuel\n  - **D = 20** si semaine de 4 jours\n  - **D = 22.5** si semaine de 4.5 jours\n- **J :** Nombre de jours\n",
+"- a\n\n  - b\n\n- c\n",
+"- a\n   - b\n- c\n",
+"- a\n    - b\n- c\n",
+"Texte :\n\n- a\n  1. un\n  2. deux\n- b\n"
 ]

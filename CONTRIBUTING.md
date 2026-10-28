@@ -41,7 +41,9 @@ lib/
   lint.js                 problèmes de la page pour l'éditeur : position exacte et corrections rapides
   similar.js              fautes de frappe : distance entre deux mots, valeur la plus proche
   links.js                liens, images et ancres introuvables
-  mkdocs-config.js        lecture facultative du mkdocs.yml (docs_dir, markdown_extensions)
+  quality.js              défauts de rédaction (liens mal formés, astérisques échappés, titres coupés)
+                          et conseils (images sans description, liens absolus vers une page du site)
+  mkdocs-config.js        lecture facultative du mkdocs.yml (docs_dir, site_url, markdown_extensions)
   assist.js               autocomplétion et aide au survol
   catalog.js              descriptions des blocs et options, liens vers la documentation du thème
   vendor/                 markdown-it, js-yaml et markdown-it-deflist (fichiers tiers, non modifiés)
@@ -53,6 +55,8 @@ snippets/dsfr.json        snippets d'insertion des composants
 samples/                  pages d'exemple (démonstration et erreurs)
 test/                     tests (voir ci-dessous)
 scripts/captures.py       régénère les captures d'écran du README
+scripts/check-upstream.py veille : nouvelle version du thème, de dsfr_structure ou du DSFR (CI du lundi)
+docs/prise-en-main.md     guide de prise en main pour les rédacteurs
 ```
 
 Le plugin (`lib/`) ne dépend pas de VS Code : il se teste avec Node seul.
@@ -118,14 +122,18 @@ Copier ensuite depuis `dsfr/` vers `media/dsfr/` : `dsfr.min.css`, `utility/util
 version, mettre à jour `requirements-dev.txt`, relancer `npm test` et reporter les nouveautés dans
 `lib/options.js` et `lib/components.js`.
 
+Mettre aussi à jour les versions de référence en tête de `scripts/check-upstream.py` (et la ligne
+« Version de référence » du README) : c'est ce script qui signale chaque lundi, dans la CI, qu'une
+nouvelle version est sortie (avertissement jaune, sans faire échouer les tests).
+
 ## Publier une version
 
 1. Mettre à jour `version` dans `package.json` et ajouter une entrée dans `CHANGELOG.md`.
 2. Si le rendu a changé, régénérer les captures : `python3 scripts/captures.py`.
-3. Créer et pousser une étiquette :
+3. Créer et pousser une étiquette (`v` suivi du numéro, sans point après le `v`) :
    ```bash
-   git tag v0.9.6
-   git push origin v0.9.6
+   git tag v0.9.8
+   git push origin v0.9.8
    ```
 4. La CI teste, construit le `.vsix` et le joint à une Release GitHub.
 

@@ -38,4 +38,12 @@ for (const [name, s] of Object.entries(snippets)) {
   else assert(/class="fr-/.test(html), 'Snippet « ' + name + ' » sans classe DSFR :\n' + html);
   n++;
 }
+// Tuiles et cartes côte à côte : autant de colonnes et de composants que demandé
+for (const [prefix, cls, count] of [['dsfr-tuile-2', 'fr-tile', 2], ['dsfr-tuile-3', 'fr-tile', 3], ['dsfr-carte-2', 'fr-card', 2], ['dsfr-carte-3', 'fr-card', 3]]) {
+  const s = Object.values(snippets).find((x) => [].concat(x.prefix)[0] === prefix);
+  assert(s, 'snippet manquant : ' + prefix);
+  const html = createMd({ showErrors: () => true }).render(fill(s.body.join('\n')), {});
+  assert.strictEqual((html.match(/class="fr-col-12 fr-col-md-/g) || []).length, count, prefix + ' : colonnes\n' + html);
+  assert.strictEqual((html.match(new RegExp('class="' + cls + '[ "]', 'g')) || []).length, count, prefix + ' : composants\n' + html);
+}
 console.log('Snippets : ' + n + ' rendus valides');

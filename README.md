@@ -40,7 +40,7 @@ Extension créée par **Bastien** ([@bastienR17](https://github.com/bastienR17))
 - **Interactif** : accordéons, onglets, fil d'Ariane et sommaire cliquables ; thème clair ou sombre aligné sur VS Code.
 - **Aperçu à côté du Markdown** en un clic, ou dans une fenêtre séparée à placer sur un second écran.
   L'aperçu suit la page ouverte : changer d'onglet affiche l'autre page, avec ses accordéons tels qu'on les a laissés.
-- **38 snippets**, dont 13 propres à Doc SIRH, pour insérer les composants sans retenir leur syntaxe.
+- **40 snippets**, dont 13 propres à Doc SIRH, pour insérer les composants sans retenir leur syntaxe.
 
 ![Erreurs signalées dans l'aperçu](docs/images/erreurs.png)
 
@@ -53,6 +53,9 @@ Extension créée par **Bastien** ([@bastienR17](https://github.com/bastienR17))
 3. Recharger la fenêtre : **Ctrl+Maj+P** → **Developer: Reload Window**.
 
 Pour mettre à jour, installer le nouveau `.vsix` de la même façon.
+
+Première utilisation ? Le [guide de prise en main](docs/prise-en-main.md) montre en 5 minutes comment
+ouvrir l'aperçu, insérer un composant et corriger une erreur.
 
 ## Utilisation
 
@@ -101,6 +104,16 @@ L'extension analyse la page ouverte (et seulement elle) pendant que vous écrive
   le `mkdocs.yml` du site, les liens absolus (`/guides/page.md`) sont résolus depuis `docs_dir`, et une
   syntaxe utilisée mais non activée dans `markdown_extensions` (blocs `///`, `!!!`, `???`, `{: … }`) est signalée.
   Les adresses web et les liens vers un dossier ne sont pas vérifiés.
+- **Défauts de rédaction** visibles sur le site, fréquents après un copier-coller depuis Word : lien mal
+  formé (`[texte(https://…)` sans `]`, ou adresse sans `)` final), astérisques échappés `\*\*texte\*\*`
+  affichés au lieu du gras, titre coupé en deux (la fin du titre, en minuscule, passée à la ligne suivante).
+  Chacun a sa correction dans l'ampoule. Une ligne de grille `/// row` non fermée avant la suivante est
+  signalée avec la ligne exacte où ajouter `///`.
+- **Conseils** (soulignés en pointillés bleus, non comptés dans la barre d'état) : image sans description
+  (`![](…)` vide ou `<img>` sans `alt`, obligatoire pour l'accessibilité RGAA ; l'ampoule ajoute `alt=""`
+  à compléter) et lien absolu vers une page du site (`https://docsirh.e2.rie.gouv.fr/Rubrique/Page/`) :
+  l'ampoule propose le lien relatif vers le fichier `.md` quand il est trouvé dans le dossier. Les liens
+  vers `…/fichiers/` ne sont pas concernés.
 
 ### Snippets
 
@@ -119,6 +132,7 @@ possibles (type d'alerte, couleur…) se choisissent ensuite dans une liste ; **
 | `dsfr-citation`, `dsfr-exergue` | Citation, mise en exergue |
 | `dsfr-carte`, `dsfr-tuile` | Carte, tuile |
 | `dsfr-tuile-2`, `dsfr-tuile-3` | 2 ou 3 tuiles côte à côte (l'une sous l'autre sur mobile) |
+| `dsfr-carte-2`, `dsfr-carte-3` | 2 ou 3 cartes côte à côte (l'une sous l'autre sur mobile) |
 | `dsfr-grille` | Ligne de grille à deux colonnes |
 | `dsfr-onglets` | Système d'onglets |
 | `dsfr-boutons`, `dsfr-bouton` | Groupe de boutons, bouton |
@@ -189,7 +203,9 @@ Là où les deux moteurs diffèrent, l'aperçu reproduit le comportement du site
 - un `\` en fin de ligne reste affiché et ne crée pas de retour à la ligne ;
 - `**texte **suite` (espace avant les `**` fermantes) est signalé : selon la version de Python-Markdown du site,
   il est en gras (jusqu'à 3.11.0) ou affiché avec les `**` (3.11.1 et après). Écrire `**texte** suite` ;
-- un contenu de liste indenté de moins de 4 espaces est signalé (sur le site, il sort de la liste) ;
+- une sous-liste indentée de moins de 4 espaces n'est pas imbriquée : ses puces rejoignent la liste principale,
+  comme sur le site (signalé, avec une correction qui l'indente de 4 espaces) ;
+- un autre contenu de liste indenté de moins de 4 espaces est signalé (sur le site, il sort de la liste) ;
 - les attributs `{: .classe }` (`attr_list`) et les listes de définitions (`def_list`) sont pris en charge.
 
 L'aperçu signale aussi deux particularités du thème : le titre `title` du bandeau d'en-tête n'est pas
@@ -225,6 +241,8 @@ le mieux est de corriger aussi ce script pour qu'il mette les valeurs entre guil
 | `dsfrPreview.theme` | `auto`, `light`, `dark` | `auto` | Thème DSFR (`auto` suit VS Code) |
 | `dsfrPreview.showErrors` | `true`, `false` | `true` | Afficher les encadrés d'erreur dans l'aperçu et souligner les problèmes dans l'éditeur |
 | `dsfrPreview.checkLinks` | `true`, `false` | `true` | Souligner les liens, images et ancres introuvables, et les syntaxes non activées dans le `mkdocs.yml` |
+| `dsfrPreview.checkImageAlt` | `true`, `false` | `true` | Signaler les images sans description (conseil) |
+| `dsfrPreview.siteUrl` | adresse | `https://docsirh.e2.rie.gouv.fr` | Adresse du site, pour signaler les liens absolus vers ses pages (le `site_url` du `mkdocs.yml` est prioritaire ; réglage vide : pas de vérification) |
 | `dsfrPreview.mkdocsCompat` | `true`, `false` | `true` | Reproduire les règles Markdown du site |
 | `dsfrPreview.openMode` | `side`, `window` | `side` | Où s'ouvre l'aperçu : à côté du Markdown ou dans une fenêtre séparée |
 

@@ -2,7 +2,7 @@
   "name": "dsfr-markdown-preview",
   "displayName": "Aperçu DSFR pour Markdown (MkDocs DSFR)",
   "description": "Affiche dans l'aperçu Markdown de VS Code le rendu DSFR des pages MkDocs DSFR : blocs dsfr_structure (alertes, accordéons, cartes, tuiles, onglets…) et composants de l'en-tête (bandeau, fil d'Ariane, sommaire).",
-  "version": "0.9.6",
+  "version": "0.9.8",
   "publisher": "dsnumrh4",
   "author": {
     "name": "Bastien (bastienR17)",
@@ -125,6 +125,16 @@
           "default": true,
           "description": "Souligner dans l'éditeur les liens, images et ancres introuvables de la page ouverte, et, si le dossier contient un mkdocs.yml, les syntaxes non activées dans markdown_extensions."
         },
+        "dsfrPreview.checkImageAlt": {
+          "type": "boolean",
+          "default": true,
+          "description": "Signaler discrètement (niveau information) les images sans description : ![](…) aux crochets vides et <img> sans attribut alt. La description est lue par les lecteurs d'écran et requise pour l'accessibilité (RGAA)."
+        },
+        "dsfrPreview.siteUrl": {
+          "type": "string",
+          "default": "https://docsirh.e2.rie.gouv.fr",
+          "description": "Adresse du site, pour signaler les liens absolus vers ses propres pages (un lien relatif vers le .md est préférable). Le site_url du mkdocs.yml l'emporte s'il existe. Vide : pas de vérification. Les liens vers …/fichiers/ ne sont pas concernés."
+        },
         "dsfrPreview.mkdocsCompat": {
           "type": "boolean",
           "default": true,
@@ -218,7 +228,7 @@
   },
   "scripts": {
     "test": "npm run test:js && npm run test:python",
-    "test:js": "node test/errors.js && node test/snippets.js && node test/frontmatter.js && node test/frontmatter-fix.js && node test/lint.js && node test/assist.js && node test/links.js && node test/samples.js && node test/extension-host.js",
+    "test:js": "node test/errors.js && node test/snippets.js && node test/frontmatter.js && node test/frontmatter-fix.js && node test/lint.js && node test/assist.js && node test/links.js && node test/quality.js && node test/samples.js && node test/extension-host.js",
     "test:python": "cd test && python3 compare.py && python3 doc_check.py && python3 frontmatter_mkdocs.py",
     "test:browser": "cd test && python3 preview_browser.py",
     "package": "vsce package"

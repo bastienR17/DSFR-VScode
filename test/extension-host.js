@@ -19,6 +19,7 @@ const diagStore = new Map();
 let codeActionProvider = null;
 let pickItems = null;
 let pickAnswer = () => undefined;
+let pickTitle = null;
 let lastSelection = null;
 const statusItems = [];
 let diagnosticsListener = null;
@@ -99,7 +100,7 @@ const vscode = {
       statusItems.push(item);
       return item;
     },
-    showQuickPick: async (items) => { pickItems = items; return pickAnswer(items); },
+    showQuickPick: async (items, opts) => { pickItems = items; pickTitle = opts && opts.title; return pickAnswer(items); },
     onDidChangeActiveTextEditor: noop,
     showInformationMessage: async (message) => { messages.push(message); return undefined; },
     showWarningMessage: async (message, options) => { messages.push(message); return options && options.modal ? modalAnswer : undefined; },
@@ -140,7 +141,7 @@ const vscode = {
   MarkdownString: class { constructor(value) { this.value = value; } },
   Hover: class { constructor(contents, range) { Object.assign(this, { contents, range }); } },
   Range, Diagnostic, CodeAction, WorkspaceEdit,
-  DiagnosticSeverity: { Error: 0, Warning: 1 },
+  DiagnosticSeverity: { Error: 0, Warning: 1, Information: 2 },
   CodeActionKind: (() => {
     const kind = (value) => ({
       value,
@@ -292,6 +293,34 @@ async function lintVia(document) {
   const readme = textDocument(new Uri(path.join(site, 'README.md')), linkText);
   siteDiags = await lintVia(readme);
   assert.deepStrictEqual(siteDiags.map((d) => d.code), ['dsfr-link-missing', 'dsfr-link-missing', 'dsfr-file-missing']);
+  // Conseils (niveau information) : image sans description, lien absolu vers une page du site
+  fs.writeFileSync(path.join(site, 'mkdocs.yml'), 'site_url: https://docsirh.e2.rie.gouv.fr/\nmarkdown_extensions:\n  - attr_list\n');
+  const tipText = '# Page\n\n![](img.png) voir [Autre](https://docsirh.e2.rie.gouv.fr/autre/) et [PDF](https://docsirh.e2.rie.gouv.fr/fichiers/a.pdf)\n';
+  fs.writeFileSync(path.join(site, 'docs', 'img.png'), '');
+  const tipDoc = textDocument(new Uri(path.join(site, 'docs', 'conseils.md')), tipText);
+  const tipDiags = await lintVia(tipDoc);
+  assert.deepStrictEqual(tipDiags.map((d) => [d.code, d.severity]), [['dsfr-img-alt', 2], ['dsfr-absolute-link', 2]]);
+  const tipActions = codeActionProvider.provideCodeActions(tipDoc, tipDiags[1].range, { diagnostics: [tipDiags[1]] });
+  assert.deepStrictEqual(tipActions.map((a) => a.edit.entries[0].text), ['autre.md']);
+  vscode.window.activeTextEditor = { document: tipDoc };
+  statusItems[1].refresh();
+  assert(!statusItems[1].visible, 'les conseils ne sont pas comptés dans la barre d\'état');
+  pickItems = null; pickAnswer = () => undefined; pickTitle = null;
+  await commands['dsfrPreview.listProblems']();
+  assert.deepStrictEqual(pickItems.map((i) => i.label), ['$(info) Ligne 3', '$(info) Ligne 3']);
+  assert.strictEqual(pickTitle, 'DSFR : 2 conseils dans cette page');
+  vscode.window.activeTextEditor = null;
+  // Défaut visible sur le site (titre coupé) : avertissement, compté dans la barre d'état
+  const cutDoc = textDocument(new Uri(path.join(site, 'docs', 'coupe.md')), '# Page\n\n## Vérifier que la position permet l\'acquisition de\n\ncongé\n');
+  const cutDiags = await lintVia(cutDoc);
+  assert.deepStrictEqual(cutDiags.map((d) => [d.code, d.severity]), [['dsfr-split-heading', 1]]);
+  vscode.window.activeTextEditor = { document: cutDoc };
+  statusItems[1].refresh();
+  assert.strictEqual(statusItems[1].text, '$(warning) 1 DSFR');
+  vscode.window.activeTextEditor = null;
+  settings.checkImageAlt = false;
+  assert.deepStrictEqual((await lintVia(tipDoc)).map((d) => d.code), ['dsfr-absolute-link'], 'réglage checkImageAlt coupé');
+  delete settings.checkImageAlt;
   fs.rmSync(site, { recursive: true, force: true });
 
   // Commande « Problèmes de la page » : liste avec les lignes, rien n'est modifié ; compteur dans la barre d'état

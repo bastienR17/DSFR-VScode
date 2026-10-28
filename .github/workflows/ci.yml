@@ -1,6 +1,8 @@
 # Tests à chaque push et pull request ; paquet .vsix en artefact.
 # Pour publier une version : pousser une étiquette « v0.6.0 » (par exemple) :
 # le .vsix est alors joint à une Release GitHub créée automatiquement.
+# Chaque lundi, les tests sont aussi relancés avec les dernières versions de Python-Markdown, et la
+# veille signale (avertissement jaune, sans échec) une nouvelle version du thème ou du DSFR.
 name: CI
 
 on:
@@ -8,6 +10,9 @@ on:
     branches: [main]
     tags: ['v*']
   pull_request:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -28,6 +33,10 @@ jobs:
           python-version: '3.12'
           cache: pip
           cache-dependency-path: requirements-dev.txt
+
+      - name: Veille des versions (thème, dsfr_structure, DSFR)
+        run: python scripts/check-upstream.py
+        continue-on-error: true
 
       - name: Installer les dépendances
         run: |

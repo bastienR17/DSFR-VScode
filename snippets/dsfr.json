@@ -187,13 +187,69 @@
       "dsfr-carte",
       "dsfr-card"
     ],
-    "description": "Carte DSFR avec lien",
+    "description": "Carte DSFR avec lien (dsfr-carte-2 ou dsfr-carte-3 : plusieurs cartes côte à côte)",
     "body": [
       "/// card | ${1:Titre de la carte}",
       "    description: ${2:Description}",
       "    target: ${3:page.md}",
       "    badge: ${4:Nouveau | green-menthe}",
       "${5:Détail}",
+      "///",
+      "$0"
+    ]
+  },
+  "2 cartes côte à côte": {
+    "prefix": [
+      "dsfr-carte-2",
+      "dsfr-cartes-2",
+      "dsfr-card-2"
+    ],
+    "description": "Deux cartes DSFR côte à côte (grille de 2 colonnes, l'une sous l'autre sur mobile)",
+    "body": [
+      "/// row | fr-grid-row--gutters",
+      "/// col | 12 md-6",
+      "/// card | ${1:Titre de la carte 1}",
+      "    description: ${2:Description}",
+      "    target: ${3:page.md}",
+      "///",
+      "///",
+      "/// col | 12 md-6",
+      "/// card | ${4:Titre de la carte 2}",
+      "    description: ${5:Description}",
+      "    target: ${6:page.md}",
+      "///",
+      "///",
+      "///",
+      "$0"
+    ]
+  },
+  "3 cartes côte à côte": {
+    "prefix": [
+      "dsfr-carte-3",
+      "dsfr-cartes-3",
+      "dsfr-card-3"
+    ],
+    "description": "Trois cartes DSFR côte à côte (grille de 3 colonnes, l'une sous l'autre sur mobile)",
+    "body": [
+      "/// row | fr-grid-row--gutters",
+      "/// col | 12 md-4",
+      "/// card | ${1:Titre de la carte 1}",
+      "    description: ${2:Description}",
+      "    target: ${3:page.md}",
+      "///",
+      "///",
+      "/// col | 12 md-4",
+      "/// card | ${4:Titre de la carte 2}",
+      "    description: ${5:Description}",
+      "    target: ${6:page.md}",
+      "///",
+      "///",
+      "/// col | 12 md-4",
+      "/// card | ${7:Titre de la carte 3}",
+      "    description: ${8:Description}",
+      "    target: ${9:page.md}",
+      "///",
+      "///",
       "///",
       "$0"
     ]

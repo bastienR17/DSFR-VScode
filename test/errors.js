@@ -16,7 +16,7 @@ const cases = [
   ["/// alert | Non fermé\nX\n", 'jamais fermé'],
   ["/// tile | T\n    picto: inconnu/nope\nX\n///\n", 'Pictogramme « inconnu/nope » introuvable'],
   ["/// alert | T\n    type success\nX\n///\n", 'Options illisibles'],
-  ["- a\n  - sous a\n- b\n", 'cette sous-liste ne sera pas imbriquée'],
+  ["- a\n  - sous a\n- b\n", 'cette sous-liste n\'est pas imbriquée'],
   ["- La date\n\n  Ceci pour éviter\n- Le code\n", 'ce texte sortira de la liste'],
 ];
 for (const [src, expected] of cases) {

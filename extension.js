@@ -24,6 +24,7 @@ const { createLinter } = require('./lib/lint');
 const assist = require('./lib/assist');
 const { checkLinks } = require('./lib/links');
 const mkdocsConfig = require('./lib/mkdocs-config');
+const { checkQuality } = require('./lib/quality');
 
 const SECTION = 'dsfrPreview';
 let statusItem = null;
@@ -39,6 +40,8 @@ function config() {
     mkdocsCompat: c.get('mkdocsCompat', true),
     openMode: c.get('openMode', 'side'),
     checkLinks: c.get('checkLinks', true),
+    checkImageAlt: c.get('checkImageAlt', true),
+    siteUrl: c.get('siteUrl', 'https://docsirh.e2.rie.gouv.fr'),
   };
 }
 
@@ -162,7 +165,11 @@ const lintTimers = new Map();
 // Analyse des blocs DSFR : le même plugin que l'aperçu, avec un markdown-it privé (lib/lint.js).
 const lintBlocks = createLinter({ mkdocsCompat: () => config().mkdocsCompat });
 
-const SEVERITY = () => ({ error: vscode.DiagnosticSeverity.Error, warning: vscode.DiagnosticSeverity.Warning });
+const SEVERITY = () => ({
+  error: vscode.DiagnosticSeverity.Error,
+  warning: vscode.DiagnosticSeverity.Warning,
+  info: vscode.DiagnosticSeverity.Information,
+});
 
 // Problème trouvé par lib/ (lint, links, mkdocs-config) → soulignement VS Code.
 const toDiagnostic = (issue) => {
@@ -237,6 +244,30 @@ function siteDiagnostics(document, text) {
   return issues.map(toDiagnostic);
 }
 
+/**
+ * Conseils discrets (niveau information) : images sans description, liens absolus vers le site.
+ * L'adresse du site vient du mkdocs.yml (site_url) s'il existe, sinon du réglage dsfrPreview.siteUrl
+ * (réglage vide : vérification coupée).
+ */
+function qualityIssues(document, text) {
+  const c = config();
+  const local = document.uri.scheme === 'file';
+  const file = local ? document.uri.fsPath : null;
+  const folder = local ? vscode.workspace.getWorkspaceFolder(document.uri) : null;
+  const site = local ? siteConfig(file, folder ? folder.uri.fsPath : null) : null;
+  const inSite = !!site && isInside(file, site.docsDir);
+  return checkQuality(text, {
+    checkAlt: c.checkImageAlt,
+    // Réglage vidé : pas de vérification, même si le mkdocs.yml déclare un site_url
+    siteUrl: c.checkLinks && String(c.siteUrl || '').trim() ? ((inSite && site.siteUrl) || c.siteUrl) : '',
+    file,
+    docsDir: inSite ? site.docsDir : null,
+    exists: (p) => fs.existsSync(p),
+  });
+}
+
+const qualityDiagnostics = (document, text) => qualityIssues(document, text).map(toDiagnostic);
+
 // Documents analysés : fichiers et brouillons, pas les copies ouvertes par Git (comparaisons) ou d'autres extensions.
 const LINTED_SCHEMES = new Set(['file', 'untitled', 'vscode-remote', 'vscode-vfs']);
 
@@ -248,7 +279,7 @@ function lintDocument(document) {
     return;
   }
   const text = document.getText();
-  diagnostics.set(document.uri, frontMatterDiagnostics(document, text).concat(blockDiagnostics(text), siteDiagnostics(document, text)));
+  diagnostics.set(document.uri, frontMatterDiagnostics(document, text).concat(blockDiagnostics(text), siteDiagnostics(document, text), qualityDiagnostics(document, text)));
 }
 
 // Pendant la frappe, on attend une courte pause avant de réanalyser.
@@ -302,7 +333,8 @@ const codeActionProvider = {
     // Problèmes de blocs : on réanalyse le texte affiché pour retrouver les corrections possibles.
     // Rien n'est modifié sans un clic de l'utilisateur sur une correction précise.
     if (!context.diagnostics.some((d) => d.source === 'DSFR' && d.code !== FIX_CODE)) return actions;
-    for (const issue of lintBlocks(document.getText())) {
+    const text = document.getText();
+    for (const issue of lintBlocks(text).concat(qualityIssues(document, text))) {
       if (!issue.fixes.length || issue.range.line < range.start.line || issue.range.line > range.end.line) continue;
       const linked = diagnosticFor(context.diagnostics, issue);
       if (!linked.length) continue;
@@ -336,7 +368,9 @@ function pageProblems(document) {
 function updateProblemsCount() {
   if (!problemsItem) return;
   const editor = vscode.window.activeTextEditor;
-  const list = editor && editor.document.languageId === 'markdown' && diagnostics ? diagnostics.get(editor.document.uri) || [] : [];
+  // Seuls les erreurs et avertissements sont comptés (pas les conseils « information »).
+  const list = (editor && editor.document.languageId === 'markdown' && diagnostics ? diagnostics.get(editor.document.uri) || [] : [])
+    .filter((d) => d.severity === vscode.DiagnosticSeverity.Error || d.severity === vscode.DiagnosticSeverity.Warning);
   if (!list.length) {
     problemsItem.hide();
     return;
@@ -365,14 +399,18 @@ async function listProblems(uri) {
     vscode.window.showInformationMessage('DSFR : aucun problème dans cette page.');
     return;
   }
+  const S = vscode.DiagnosticSeverity;
+  const icon = (d) => (d.severity === S.Error ? '$(error)' : d.severity === S.Warning ? '$(warning)' : '$(info)');
+  const tips = problems.filter((d) => d.severity !== S.Error && d.severity !== S.Warning).length;
+  const real = problems.length - tips;
   const items = problems.map((d) => ({
-    label: (d.severity === vscode.DiagnosticSeverity.Error ? '$(error)' : '$(warning)') + ' Ligne ' + (d.range.start.line + 1),
+    label: icon(d) + ' Ligne ' + (d.range.start.line + 1),
     description: (document.lineAt(d.range.start.line).text || '').trim().slice(0, 60),
     detail: d.message,
     diagnostic: d,
   }));
   const picked = await vscode.window.showQuickPick(items, {
-    title: 'DSFR : ' + plural(problems.length, 'problème') + ' dans cette page',
+    title: 'DSFR : ' + [real ? plural(real, 'problème') : '', tips ? plural(tips, 'conseil') : ''].filter(Boolean).join(' et ') + ' dans cette page',
     placeHolder: 'Choisir un problème pour aller à sa ligne',
     matchOnDetail: true,
   });

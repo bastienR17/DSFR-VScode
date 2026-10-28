@@ -2,6 +2,44 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## 0.9.8 — octobre 2026
+
+Version issue de la comparaison de 11 vraies pages Doc SIRH (modes opératoires et pages de rubrique)
+avec le moteur du site : 10 étaient déjà identiques, la 11e l'est désormais.
+
+### Corrections
+- **Sous-liste indentée de 2 espaces** : le site ne l'imbrique pas (Python-Markdown exige 4 espaces), ses
+  puces rejoignent la liste principale. L'aperçu l'imbriquait : il l'affiche maintenant comme le site.
+  L'avertissement reste, avec une correction dans l'ampoule qui indente la sous-liste de 4 espaces.
+
+### Ajouts
+- **Ligne de grille non fermée** : quand un `/// row` (ou une carte, une colonne…) n'est pas fermé avant le
+  bloc suivant du même nom, le message donne la ligne exacte où ajouter `///`, et l'ampoule l'ajoute au bon
+  endroit (avant : « fermer à la fin de la page », qui ne corrigeait pas une page de rubrique en plusieurs lignes).
+- Nouveaux avertissements, chacun avec sa correction, pour des défauts relevés sur ces pages :
+  - lien mal formé : `[texte(https://…)` (il manque `]`) ou adresse sans `)` final ;
+  - astérisques échappés `\*\*texte\*\*` (affichés au lieu du gras) ;
+  - titre coupé en deux : la fin du titre, en minuscule, passée seule à la ligne suivante.
+
+## 0.9.7 — octobre 2026
+
+### Ajouts
+- **Conseils d'accessibilité et de liens**, soulignés discrètement (pointillés bleus, niveau « information »,
+  non comptés dans la barre d'état) :
+  - image sans description : `![](…)` aux crochets vides ou `<img>` sans `alt` (lue par les lecteurs
+    d'écran, exigée par le RGAA). L'ampoule ajoute `alt=""` à compléter ;
+  - lien absolu vers une page du site (`https://docsirh.e2.rie.gouv.fr/Rubrique/Page/`) : un lien relatif
+    vers le `.md` reste valable si l'adresse change et MkDocs le vérifie. L'ampoule propose le lien
+    relatif quand la page est trouvée dans le dossier. Les liens vers `…/fichiers/` ne sont pas concernés.
+  - Réglages `dsfrPreview.checkImageAlt` et `dsfrPreview.siteUrl` (le `site_url` du `mkdocs.yml` est prioritaire).
+- Snippets `dsfr-carte-2` et `dsfr-carte-3` : 2 ou 3 cartes côte à côte, comme les tuiles.
+- **Guide de prise en main** pour les rédacteurs : [docs/prise-en-main.md](docs/prise-en-main.md).
+- **Veille automatique** : chaque lundi, la CI relance les tests avec les dernières versions de
+  Python-Markdown et signale une nouvelle version de mkdocs-dsfr, de `dsfr_structure` ou du DSFR.
+
+### Modifications
+- La liste **DSFR : Problèmes de la page** distingue les problèmes des conseils (icône ⓘ).
+
 ## 0.9.6 — octobre 2026
 
 ### Ajouts
