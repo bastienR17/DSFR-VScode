@@ -11,9 +11,6 @@ fichier `.vsix` : rien d'autre à installer (ni Python, ni MkDocs).
    **Installer à partir d'un VSIX…** → choisir le fichier.
 3. Recharger la fenêtre : **Ctrl+Maj+P** → taper `Reload Window` → **Entrée**.
 
-Le pas-à-pas **Bien démarrer** s'ouvre alors tout seul : suivez ses 5 étapes illustrées, avec une page d'essai
-où tout peut être testé sans risque. Pour le rouvrir plus tard : **Ctrl+Maj+P** → **DSFR : Bien démarrer**.
-
 En bas de l'écran apparaissent **Aperçu DSFR**, **＋ Insérer un composant** et l'état de la page
 (**✓ Page sans erreur** en vert, ou **N points à corriger** en rouge).
 

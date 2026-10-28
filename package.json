@@ -2,7 +2,7 @@
   "name": "dsfr-markdown-preview",
   "displayName": "Aperçu DSFR pour Markdown (MkDocs DSFR)",
   "description": "Affiche dans l'aperçu Markdown de VS Code le rendu DSFR des pages MkDocs DSFR : blocs dsfr_structure (alertes, accordéons, cartes, tuiles, onglets…) et composants de l'en-tête (bandeau, fil d'Ariane, sommaire).",
-  "version": "0.11.0",
+  "version": "0.11.1",
   "publisher": "dsnumrh4",
   "author": {
     "name": "Bastien (bastienR17)",
@@ -62,18 +62,6 @@
         "title": "Insérer un composant",
         "category": "DSFR",
         "icon": "$(add)"
-      },
-      {
-        "command": "dsfrPreview.welcome",
-        "title": "Bien démarrer (pas-à-pas)",
-        "category": "DSFR",
-        "icon": "$(lightbulb)"
-      },
-      {
-        "command": "dsfrPreview.newPage",
-        "title": "Créer une page d'essai",
-        "category": "DSFR",
-        "icon": "$(new-file)"
       },
       {
         "command": "dsfrPreview.open",
@@ -285,12 +273,6 @@
         {
           "command": "dsfrPreview.insertComponent",
           "when": "editorLangId == markdown"
-        },
-        {
-          "command": "dsfrPreview.newPage"
-        },
-        {
-          "command": "dsfrPreview.welcome"
         }
       ]
     },
@@ -315,77 +297,7 @@
       "[markdown]": {
         "editor.wordWrap": "on"
       }
-    },
-    "walkthroughs": [
-      {
-        "id": "bienDemarrer",
-        "title": "Bien démarrer avec l'Aperçu DSFR",
-        "description": "Rédiger une page Doc SIRH en 5 étapes : voir la page comme sur le site, insérer des composants, corriger les erreurs.",
-        "steps": [
-          {
-            "id": "page",
-            "title": "Ouvrir une page",
-            "description": "Ouvrez une page de Doc SIRH (un fichier **.md**) en cliquant dessus dans l'explorateur, à gauche.\nPas de page sous la main ? Créez une page d'essai : rien n'est enregistré, vous pouvez tout essayer sans risque.\n[Créer une page d'essai](command:dsfrPreview.newPage)",
-            "media": {
-              "image": "media/walkthrough/1-page.png",
-              "altText": "Une page Doc SIRH ouverte dans VS Code, avec les blocs /// en couleur"
-            },
-            "completionEvents": [
-              "onCommand:dsfrPreview.newPage",
-              "onContext:editorLangId == markdown"
-            ]
-          },
-          {
-            "id": "apercu",
-            "title": "Voir la page comme sur le site",
-            "description": "L'aperçu, à droite, montre la page **comme sur le site Doc SIRH** : en-tête, menu, composants. Il se met à jour pendant que vous écrivez.\nS'il n'est pas ouvert, cliquez sur le bouton **Aperçu** en haut à droite de la page, ou ici :\n[Ouvrir l'aperçu](command:dsfrPreview.open)",
-            "media": {
-              "image": "media/walkthrough/2-apercu.png",
-              "altText": "La page à gauche et son aperçu à droite, avec l'en-tête du site Doc SIRH"
-            },
-            "completionEvents": [
-              "onCommand:dsfrPreview.open"
-            ]
-          },
-          {
-            "id": "inserer",
-            "title": "Insérer un composant",
-            "description": "Placez le curseur à l'endroit voulu, puis cliquez sur **＋ Insérer un composant** en bas de l'écran : choisissez dans la liste (capture d'écran, consigne, alerte, cartes…). Les zones à remplir sont surlignées : **Tab** passe à la suivante.\nAstuce : taper **dsfr-** dans la page ouvre aussi la liste.\n[Insérer un composant](command:dsfrPreview.insertComponent)",
-            "media": {
-              "image": "media/walkthrough/3-inserer.png",
-              "altText": "La liste des composants Doc SIRH, rangés par familles"
-            },
-            "completionEvents": [
-              "onCommand:dsfrPreview.insertComponent"
-            ]
-          },
-          {
-            "id": "corriger",
-            "title": "Corriger une erreur",
-            "description": "Une erreur est **soulignée** dans la page, et signalée en bas de l'écran (« 1 point à corriger », en rouge). Cliquez sur le mot souligné, puis sur l'**ampoule 💡** : choisissez la correction proposée.\nQuand tout est bon, le bas de l'écran affiche « ✓ Page sans erreur ».\n[Voir les points à corriger](command:dsfrPreview.listProblems)",
-            "media": {
-              "image": "media/walkthrough/4-corriger.png",
-              "altText": "Un mot souligné en rouge, l'ampoule et la correction proposée"
-            },
-            "completionEvents": [
-              "onCommand:dsfrPreview.listProblems"
-            ]
-          },
-          {
-            "id": "reglages",
-            "title": "Régler l'affichage",
-            "description": "Aperçu clair ou sombre, page entière ou contenu seul, largeur d'un ordinateur, couleurs dans l'éditeur… tout se règle ici.\n[Ouvrir les réglages](command:workbench.action.openSettings?%5B%22dsfrPreview%22%5D)",
-            "media": {
-              "image": "media/walkthrough/5-reglages.png",
-              "altText": "Les réglages de l'Aperçu DSFR"
-            },
-            "completionEvents": [
-              "onCommand:workbench.action.openSettings"
-            ]
-          }
-        ]
-      }
-    ]
+    }
   },
   "scripts": {
     "test": "npm run test:js && npm run test:python",

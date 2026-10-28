@@ -480,25 +480,6 @@ function updateProblemsCount() {
   problemsItem.show();
 }
 
-/* --- Pas-à-pas « Bien démarrer » (contributes.walkthroughs) ---------------------------- */
-const WALKTHROUGH = 'bienDemarrer';
-function walkthroughId(context) {
-  const pkg = (context && context.extension && context.extension.packageJSON) || require('./package.json');
-  return pkg.publisher + '.' + pkg.name + '#' + WALKTHROUGH;
-}
-function openWalkthrough(context) {
-  return vscode.commands.executeCommand('workbench.action.openWalkthrough', walkthroughId(context), false);
-}
-
-/** Page d'essai : nouvelle page non enregistrée, avec quelques composants et une erreur volontaire. */
-async function newPracticePage(context) {
-  const file = context && context.asAbsolutePath ? context.asAbsolutePath(path.join('media', 'walkthrough', 'page-essai.md')) : path.join(__dirname, 'media', 'walkthrough', 'page-essai.md');
-  const content = fs.readFileSync(file, 'utf8');
-  const doc = await vscode.workspace.openTextDocument({ language: 'markdown', content });
-  await vscode.window.showTextDocument(doc, { preview: false });
-  if (isEnabled()) await open(doc.uri);
-}
-
 /**
  * Commande « Insérer un composant » : liste des composants par familles, avec une explication ;
  * le composant choisi est inséré au curseur (les clés de l'en-tête de page vont dans l'en-tête).
@@ -701,8 +682,6 @@ function activate(context) {
     vscode.window.onDidChangeActiveTextEditor((editor) => { updateStatus(); updateProblemsCount(); decorateEditor(editor); maybeAutoOpen(editor); }),
     vscode.window.onDidChangeVisibleTextEditors ? vscode.window.onDidChangeVisibleTextEditors(decorateVisible) : { dispose() {} },
     vscode.commands.registerCommand('dsfrPreview.insertComponent', insertComponent),
-    vscode.commands.registerCommand('dsfrPreview.welcome', () => openWalkthrough(context)),
-    vscode.commands.registerCommand('dsfrPreview.newPage', () => newPracticePage(context)),
     vscode.commands.registerCommand('dsfrPreview.toggle', toggle),
     vscode.commands.registerCommand('dsfrPreview.open', open),
     vscode.commands.registerCommand('dsfrPreview.openToSide', openToSide),
@@ -731,11 +710,6 @@ function activate(context) {
     vscode.workspace.onDidSaveTextDocument(() => lintOpenDocuments()),
     { dispose: () => { for (const t of lintTimers.values()) clearTimeout(t); lintTimers.clear(); } }
   );
-  // Première installation : le pas-à-pas « Bien démarrer » s'ouvre une fois
-  if (context.globalState && !context.globalState.get('dsfrPreview.welcomeShown')) {
-    context.globalState.update('dsfrPreview.welcomeShown', true);
-    Promise.resolve(openWalkthrough(context)).catch(() => {});
-  }
   decorationTypes = createDecorationTypes();
   for (const t of Object.values(decorationTypes)) context.subscriptions.push(t);
   decorateVisible();

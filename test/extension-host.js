@@ -184,8 +184,7 @@ async function lintVia(document) {
 
 (async () => {
   const ext = require('../extension.js');
-  const globalState = new Map();
-  const ctx = { subscriptions: [], asAbsolutePath: (p) => path.join(__dirname, '..', p), globalState: { get: (k) => globalState.get(k), update: async (k, v) => globalState.set(k, v) } };
+  const ctx = { subscriptions: [], asAbsolutePath: (p) => path.join(__dirname, '..', p) };
   const api = await ext.activate(ctx);
   const MarkdownIt = require('markdown-it');
   const md = api.extendMarkdownIt(new MarkdownIt({ html: true }));
@@ -197,18 +196,6 @@ async function lintVia(document) {
   for (const list of Object.values(manifest.menus)) for (const item of list) declared.add(item.command);
   for (const k of manifest.keybindings) declared.add(k.command);
   for (const id of declared) assert(commands[id], 'commande déclarée mais non enregistrée : ' + id);
-  // Première installation : le pas-à-pas « Bien démarrer » s'ouvre une seule fois
-  assert(calls.includes('workbench.action.openWalkthrough'), 'pas-à-pas ouvert à la première activation');
-  assert.strictEqual(globalState.get('dsfrPreview.welcomeShown'), true);
-  // Pas-à-pas déclaré : images présentes, boutons vers des commandes enregistrées
-  const walk = manifest.walkthroughs[0];
-  assert.strictEqual(walk.id, 'bienDemarrer');
-  for (const step of walk.steps) {
-    assert(fs.existsSync(path.join(__dirname, '..', step.media.image)), 'image manquante : ' + step.media.image);
-    for (const m of step.description.matchAll(/\(command:([\w.]+)/g)) assert(commands[m[1]] || m[1].startsWith('workbench.'), 'commande inconnue : ' + m[1]);
-    for (const ev of step.completionEvents) if (ev.startsWith('onCommand:dsfrPreview.')) assert(commands[ev.slice(10)], ev);
-  }
-  assert(fs.readFileSync(path.join(__dirname, '..', '.vscodeignore'), 'utf8').split('\n').every((l) => !/^media/.test(l)), 'images du pas-à-pas livrées');
   // Actif partout, même sans mkdocs.yml
   const other = md.render(src, { currentDocument: { fsPath: '/tmp/other/README.md' } });
   assert(other.includes('fr-alert fr-alert--success') && other.includes('data-enabled="true"'), other);
@@ -353,6 +340,7 @@ async function lintVia(document) {
 
   // Commande « Problèmes de la page » : liste avec les lignes, rien n'est modifié ; compteur dans la barre d'état
   assert(!commands['dsfrPreview.fixPage'], 'plus de correction automatique');
+  assert(!commands['dsfrPreview.welcome'] && !commands['dsfrPreview.newPage'] && !manifest.walkthroughs, 'pas de pas-à-pas d\'accueil ni de page d\'essai');
   const listText = '/// alert | A\n    type: warnig\nTexte\n///\n\n/// alert | B\n    type: rouge\nTexte\n///\n';
   const listDoc = textDocument(new Uri('/tmp/other/liste.md'), listText);
   vscode.window.activeTextEditor = { document: listDoc };
@@ -458,14 +446,6 @@ async function lintVia(document) {
   await new Promise((r) => setTimeout(r, 10));
   assert(!calls.includes('markdown.showPreviewToSide'), 'une seule fois par fenêtre');
   vscode.window.activeTextEditor = null;
-
-  // Page d'essai : page non enregistrée avec une erreur volontaire, aperçu ouvert à côté
-  calls.length = 0;
-  await commands['dsfrPreview.newPage']();
-  assert(calls.includes('markdown.showPreviewToSide'), calls.join(', '));
-  const essai = fs.readFileSync(path.join(__dirname, '..', 'media', 'walkthrough', 'page-essai.md'), 'utf8');
-  const { createLinter } = require('../lib/lint');
-  assert.deepStrictEqual(createLinter()(essai).map((i) => i.code), ['dsfr-invalid-block'], 'une seule erreur, volontaire');
 
   // Repli des blocs « /// »
   const foldDoc = textDocument(new Uri('/tmp/other/repli.md'), '/// tabs\n/// tab | Un\nA\n///\n///\n');

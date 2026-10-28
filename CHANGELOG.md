@@ -2,15 +2,11 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
-## 0.11.0 — octobre 2026
+## 0.11.1 — octobre 2026
 
 Version pensée pour les rédacteurs qui n'ont pas l'habitude de VS Code.
 
 ### Ajouts
-- **Pas-à-pas « Bien démarrer »** : 5 étapes illustrées (ouvrir une page, voir l'aperçu, insérer un composant,
-  corriger une erreur, régler l'affichage), avec un bouton par étape. Il s'ouvre à la première installation ;
-  pour le rouvrir : **DSFR : Bien démarrer**. Commande **DSFR : Créer une page d'essai** : une page non
-  enregistrée, avec une erreur volontaire à corriger, pour tout essayer sans risque.
 - **＋ Insérer un composant** (bas de l'écran, clic droit ou palette) : les composants rangés par familles
   (Doc SIRH, messages, cartes et tuiles, contenus repliables, boutons, images et tableaux, en-tête de page),
   avec une icône et une phrase d'explication. Les blocs de l'en-tête de page se placent tout seuls en haut.

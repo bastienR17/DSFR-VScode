@@ -60,7 +60,6 @@ samples/                  pages d'exemple (démonstration et erreurs)
 syntaxes/                 coloration des blocs « /// » (grammaire injectée dans le Markdown de VS Code)
 test/                     tests (voir ci-dessous)
 scripts/captures.py       régénère les captures d'écran du README
-scripts/walkthrough-images.js  régénère les illustrations du pas-à-pas (media/walkthrough/)
 scripts/check-upstream.py veille : nouvelle version du thème, de dsfr_structure ou du DSFR (CI du lundi)
 docs/prise-en-main.md     guide de prise en main pour les rédacteurs
 ```
@@ -143,8 +142,8 @@ nouvelle version est sortie (avertissement jaune, sans faire échouer les tests)
 2. Si le rendu a changé, régénérer les captures : `python3 scripts/captures.py`.
 3. Créer et pousser une étiquette (`v` suivi du numéro, sans point après le `v`) :
    ```bash
-   git tag v0.11.0
-   git push origin v0.11.0
+   git tag v0.11.1
+   git push origin v0.11.1
    ```
 4. La CI teste, construit le `.vsix` et le joint à une Release GitHub.
 
