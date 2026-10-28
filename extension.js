@@ -26,6 +26,7 @@ const { checkLinks } = require('./lib/links');
 const mkdocsConfig = require('./lib/mkdocs-config');
 const { checkQuality } = require('./lib/quality');
 const { foldingRanges } = require('./lib/folding');
+const { DOC_SIRH } = require('./lib/site-frame');
 
 const SECTION = 'dsfrPreview';
 let statusItem = null;
@@ -45,9 +46,9 @@ function config() {
     siteUrl: c.get('siteUrl', 'https://docsirh.e2.rie.gouv.fr'),
     pageLayout: c.get('pageLayout', 'site'),
     desktopWidth: c.get('desktopWidth', false),
-    siteBrand: c.get('siteBrand', 'République<br>française'),
-    siteTitle: c.get('siteTitle', 'Doc SIRH'),
-    siteTagline: c.get('siteTagline', ''),
+    siteBrand: c.get('siteBrand', DOC_SIRH.intitule),
+    siteTitle: c.get('siteTitle', DOC_SIRH.titre),
+    siteTagline: c.get('siteTagline', DOC_SIRH.sousTitre),
   };
 }
 
@@ -241,11 +242,9 @@ function siteFrameFor(env) {
     const site = siteConfig(file, folder ? folder.uri.fsPath : null);
     theme = site && site.theme ? site.theme : null;
   }
-  return Object.assign(
-    { intitule: c.siteBrand, titre: c.siteTitle, sousTitre: c.siteTagline, editButton: !theme },
-    theme || {},
-    { desktop: !!c.desktopWidth }
-  );
+  // Sans mkdocs.yml : en-tête, menu et pied de page de Doc SIRH (bloc-marque, titre et sous-titre réglables)
+  const base = theme ? {} : Object.assign({}, DOC_SIRH, { intitule: c.siteBrand, titre: c.siteTitle, sousTitre: c.siteTagline });
+  return Object.assign(base, theme || {}, { desktop: !!c.desktopWidth, path: file || '' });
 }
 
 const isInside = (file, dir) => {

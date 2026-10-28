@@ -164,7 +164,7 @@
             "Page entière comme sur le site : en-tête, menu latéral (sommaire de la page), contenu et pied de page",
             "Contenu de la page seulement, sur toute la largeur de l'aperçu"
           ],
-          "description": "Mise en page de l'aperçu. Les textes de l'en-tête et du pied de page sont lus dans le mkdocs.yml du site s'il est trouvé (theme: intitule, header, footer), sinon dans les réglages dsfrPreview.siteBrand, siteTitle et siteTagline."
+          "description": "Mise en page de l'aperçu. Les textes de l'en-tête, du menu et du pied de page sont lus dans le mkdocs.yml du site s'il est trouvé (theme: intitule, header, footer ; nav), sinon ce sont ceux de Doc SIRH (bloc-marque, titre et sous-titre réglables)."
         },
         "dsfrPreview.desktopWidth": {
           "type": "boolean",
@@ -173,8 +173,8 @@
         },
         "dsfrPreview.siteBrand": {
           "type": "string",
-          "default": "République<br>française",
-          "markdownDescription": "Bloc-marque de l'en-tête et du pied de page (`<br>` pour passer à la ligne), si le `mkdocs.yml` du site n'est pas trouvé."
+          "default": "Ministères<br>Transition écologique<br>Aménagement du territoire<br>Transports<br>Ville et logement",
+          "markdownDescription": "Bloc-marque de l'en-tête et du pied de page (`<br>` pour passer à la ligne), si le `mkdocs.yml` du site n'est pas trouvé. Par défaut, celui de Doc SIRH."
         },
         "dsfrPreview.siteTitle": {
           "type": "string",
@@ -183,8 +183,9 @@
         },
         "dsfrPreview.siteTagline": {
           "type": "string",
-          "default": "",
-          "description": "Sous-titre du site dans l'en-tête, si le mkdocs.yml du site n'est pas trouvé."
+          "default": "Portail de documentation et d'accompagnement SIRH<br><i>Applications RH : Processus dématérialisés, Habilitation, Assistance, Formation SIRH</i>",
+          "description": "Sous-titre du site dans l'en-tête, si le mkdocs.yml du site n'est pas trouvé.",
+          "markdownDescription": "Sous-titre du site dans l'en-tête (`<br>` et `<i>` acceptés), si le `mkdocs.yml` du site n'est pas trouvé. Par défaut, celui de Doc SIRH."
         }
       }
     },

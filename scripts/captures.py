@@ -21,7 +21,8 @@ const createMd = require('./test/vscode-like.js');
 const fs = require('fs');
 const file = process.argv[1];
 // Mise en page « comme le site » (réglage par défaut de l'extension)
-const site = () => ({ titre: 'Doc SIRH', sousTitre: 'Documentation des outils RH', editButton: false });
+const { DOC_SIRH } = require('./lib/site-frame');
+const site = () => Object.assign({}, DOC_SIRH, { path: 'docs/Prise-en-main-du-SIRH/demo.md' });
 process.stdout.write(createMd({ showErrors: () => true, site }).render(fs.readFileSync(file, 'utf8'), {}));
 """
 

@@ -7,14 +7,20 @@ Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 ### Ajouts
 - **L'aperçu montre la page comme sur le site** : en-tête (bloc-marque, titre et sous-titre du site),
   bandeau, **menu latéral** avec le sommaire de la page (cliquable), colonne de contenu et pied de page,
-  d'après les gabarits du thème mkdocs-dsfr 0.27. Les textes de l'en-tête et du pied de page sont lus dans le
-  `mkdocs.yml` du site, sinon dans les réglages `dsfrPreview.siteBrand`, `siteTitle` et `siteTagline`.
+  d'après les gabarits du thème mkdocs-dsfr 0.27. Les textes de l'en-tête, du menu et du pied de page sont lus
+  dans le `mkdocs.yml` du site ; sans lui, ce sont ceux de **Doc SIRH** (bloc-marque des ministères, titre et
+  sous-titre, liens de l'en-tête, barre de recherche, rubriques du menu avec celle de la page mise en évidence,
+  pied de page). Bloc-marque, titre et sous-titre se changent dans `dsfrPreview.siteBrand`, `siteTitle`, `siteTagline`.
   Le réglage `dsfrPreview.pageLayout` = `content` revient à l'affichage du contenu seul.
 - Réglage `dsfrPreview.desktopWidth` : la page s'affiche à la largeur d'un ordinateur (1280 px), réduite pour
   tenir dans l'aperçu ; les cartes, tuiles et colonnes passent à la ligne comme sur le site.
 - **Couleurs dans l'éditeur** : les en-têtes `/// nom | titre`, les options (clé et valeur) et les fermetures
   `///` sont colorés selon le thème de VS Code. Rien n'est coloré dans les blocs de code.
 - **Repli des blocs** : une flèche dans la marge replie un bloc `///` (onglets, accordéon, grille…) jusqu'à sa fermeture.
+
+### Modifications
+- Ligne de cartes non fermée avant la suivante : le `///` ajouté par l'ampoule se place juste après la dernière
+  fermeture du bloc, avant la ligne vide (cas réel de la page Estève).
 
 ## 0.9.9 — octobre 2026
 

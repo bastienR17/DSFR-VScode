@@ -60,6 +60,16 @@ assert.deepStrictEqual(numberHeadings('<h2 id="a">A <em>b</em></h2><h5 class="x"
 });
 assert(framePage({ content: '', parts: { breadcrumb: null }, site: {} }).includes('République <br> française'), 'valeurs par défaut du thème');
 
+// Doc SIRH (réglages par défaut sans mkdocs.yml) : en-tête, menu principal, pied de page du site
+const { DOC_SIRH } = require('../lib/site-frame');
+html = render('# T\n', Object.assign({}, DOC_SIRH, { path: '/wiki/docs/RH-proximite/Esteve.md' }));
+assert(html.includes('Ministères<br>Transition écologique<br>Aménagement du territoire<br>Transports<br>Ville et logement'));
+assert(html.includes('<p class="fr-header__service-tagline">Portail de documentation et d\'accompagnement SIRH<br><i>Applications RH'), 'sous-titre en italique');
+assert(html.includes('target="_blank" rel="noopener" class="fr-btn">Assistance Doc SIRH</a>') && html.includes('fr-icon-edit-line">Éditer</a>'));
+assert(html.includes('class="fr-search-bar"') && html.includes('Ce site est édité par la Direction des Ressources Humaines') && html.includes('Webmestre-DSNUMRH'));
+assert(/aria-current="true">RH proximité</.test(html) && (html.match(/aria-current="true"/g) || []).length === 1, 'rubrique de la page mise en évidence');
+assert(!render('# T\n', Object.assign({}, DOC_SIRH, { path: '/docs/Ailleurs/p.md' })).includes('aria-current="true"'));
+
 // Réglages du thème lus dans le mkdocs.yml
 const cfg = parseConfig([
   'site_name: Doc', 'repo_url: https://gitlab.example/doc', 'theme:', '  name: dsfr', '  intitule: "Ministère <br> du Travail"',

@@ -40,8 +40,10 @@ Extension créée par **Bastien** ([@bastienR17](https://github.com/bastienR17))
 - **Interactif** : accordéons, onglets, fil d'Ariane et sommaire cliquables (un lien vers une ancre placée
   dans un accordéon fermé l'ouvre, comme sur le site) ; thème clair ou sombre aligné sur VS Code.
 - **La page comme sur le site** : en-tête (bloc-marque, titre du site), menu latéral avec le sommaire de la
-  page, colonne de contenu et pied de page, d'après les gabarits du thème. Les textes de l'en-tête sont lus dans
-  le `mkdocs.yml` du site. En option, la page s'affiche à la largeur d'un ordinateur, réduite pour tenir dans
+  page, colonne de contenu et pied de page, d'après les gabarits du thème. Les textes de l'en-tête, du menu et du
+  pied de page sont lus dans le `mkdocs.yml` du site ; sans lui, ce sont ceux de Doc SIRH (bloc-marque des
+  ministères, liens « Assistance Doc SIRH » et « Je donne mon avis », rubriques du menu, la rubrique de la page
+  étant mise en évidence). En option, la page s'affiche à la largeur d'un ordinateur, réduite pour tenir dans
   l'aperçu : les cartes passent à la ligne au même endroit que sur le site.
 - **Les blocs `///` colorés et repliables dans l'éditeur** : nom du bloc, titre, options et fermeture en couleur ;
   une flèche dans la marge replie un bloc (onglets, accordéon, grille…) jusqu'à son `///`.
@@ -258,7 +260,7 @@ le mieux est de corriger aussi ce script pour qu'il mette les valeurs entre guil
 | `dsfrPreview.openMode` | `side`, `window` | `side` | Où s'ouvre l'aperçu : à côté du Markdown ou dans une fenêtre séparée |
 | `dsfrPreview.pageLayout` | `site`, `content` | `site` | Page entière comme sur le site (en-tête, menu latéral, pied de page), ou contenu seul |
 | `dsfrPreview.desktopWidth` | `true`, `false` | `false` | Page à la largeur d'un ordinateur (1280 px), réduite pour tenir dans l'aperçu |
-| `dsfrPreview.siteBrand`, `siteTitle`, `siteTagline` | texte | `République<br>française`, `Doc SIRH`, vide | Bloc-marque, titre et sous-titre de l'en-tête, si le `mkdocs.yml` du site n'est pas trouvé |
+| `dsfrPreview.siteBrand`, `siteTitle`, `siteTagline` | texte | ceux de Doc SIRH | Bloc-marque, titre et sous-titre de l'en-tête, si le `mkdocs.yml` du site n'est pas trouvé |
 
 ## Limites connues
 

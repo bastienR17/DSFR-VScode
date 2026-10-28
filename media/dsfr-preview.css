@@ -143,3 +143,8 @@ body.dsfr-preview .dsfr-site #contenu > :first-child {
 body.dsfr-preview .dsfr-site[data-desktop="true"] {
   width: 1280px;
 }
+/* Bloc-marque sur plusieurs lignes (ministères) : il garde toute sa largeur, comme sur le site,
+   au lieu d'être rogné quand le sous-titre est long */
+body.dsfr-preview .dsfr-site .fr-header__brand-top {
+  flex-shrink: 0;
+}

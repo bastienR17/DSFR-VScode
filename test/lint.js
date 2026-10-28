@@ -125,6 +125,11 @@ assert.strictEqual(issue.code, 'dsfr-unclosed');
 assert(issue.message.includes('le « /// row » de la ligne 5 se retrouve imbriqué dedans'), issue.message);
 assert.deepStrictEqual(issue.fixes.map((f) => f.title), ['Fermer le bloc par « /// » juste avant la ligne 5']);
 clean(fixed(src, issue));
+// Cas réel (page Estève) : ligne vide entre les deux lignes de cartes ; « /// » ajouté après la dernière fermeture
+src = '/// row\n/// col\nA\n/// \n\n/// row\n/// col\nB\n///\n///\n';
+issue = only(src);
+assert.strictEqual(fixed(src, issue), '/// row\n/// col\nA\n/// \n///\n\n/// row\n/// col\nB\n///\n///\n');
+clean(fixed(src, issue));
 // Même nom plus profond (dans une colonne) : imbrication normale, pas de cette indication
 issue = only('/// row\n/// col\n/// row\n/// col\nB\n///\n///\n///\n');
 assert(!issue.message.includes('imbriqué dedans'), issue.message);
