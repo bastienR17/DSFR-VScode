@@ -49,6 +49,9 @@ lib/
   decorations.js          couleurs DSFR des blocs « /// » dans l'éditeur
   component-menu.js       commande « Insérer un composant » : familles, libellés, place des clés d'en-tête
   component-panel.js      boîte à composants de la barre latérale (HTML de la vue : vignettes, recherche)
+  html-to-markdown.js     collage depuis Word, Excel, Google Docs, le web (HTML → Markdown, sans dépendance)
+  version-row.js          « Nouvelle version » : ligne du tableau « Suivi des modifications »
+  format.js               barre de mise en forme : gras, italique, titres, listes, liens
   assist.js               autocomplétion et aide au survol
   catalog.js              descriptions des blocs et options, liens vers la documentation du thème
   vendor/                 markdown-it, js-yaml et markdown-it-deflist (fichiers tiers, non modifiés)
@@ -105,6 +108,9 @@ npm run test:browser   # script de l'aperçu dans Chromium
 | `test/snippets.js` | Chaque snippet produit un composant valide. |
 | `test/grammar.js` | Coloration des blocs `///` avec la vraie grammaire Markdown de VS Code (`test/fixtures/markdown.tmLanguage.json`, licence MIT) : en-têtes, options, fermetures colorés ; code ignoré. |
 | `test/component-menu.js` | « Insérer un composant » : chaque snippet rangé dans une famille, libellés, clés d'en-tête placées dans l'en-tête. |
+| `test/html-to-markdown.js` | Collage : pages Word, Google Docs et Excel réelles (`test/fixtures/`), listes de Word, cellules fusionnées, simple texte, lignes vides autour du collage ; le Markdown obtenu est aussi comparé au site dans `test/cases.json`. |
+| `test/version-row.js` | Nouvelle version : numéro suivant, date, émetteur, tableau rangé dans un sens ou dans l'autre. |
+| `test/format.js` | Mise en forme : gras et italique (ajout, retrait, plusieurs lignes), titres, listes, liens. |
 | `test/component-panel.js` | Boîte à composants : une carte et une vignette par snippet, une couleur par famille, politique de sécurité (CSP) et jeton du script. |
 | `test/decorations.js` | Couleurs des blocs `///` : positions de « /// », du nom, du titre et des options ; code et en-tête ignorés. |
 | `test/folding.js` | Repli des blocs `///` : imbrication, code et en-tête YAML ignorés. |
@@ -150,7 +156,7 @@ nouvelle version est sortie (avertissement jaune, sans faire échouer les tests)
    `npm install --no-save playwright && npx playwright install chromium`) ; `test/component-panel.js` échoue s'il en manque une.
 3. Créer et pousser une étiquette (`v` suivi du numéro, sans point après le `v`) :
    ```bash
-   git tag v0.12.0
+   git tag v0.13.0
    git push origin v0.11.2
    ```
 4. La CI teste, construit le `.vsix` et le joint à une Release GitHub.

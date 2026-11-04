@@ -2,7 +2,7 @@
   "name": "dsfr-markdown-preview",
   "displayName": "Aperçu DSFR pour Markdown (MkDocs DSFR)",
   "description": "Affiche dans l'aperçu Markdown de VS Code le rendu DSFR des pages MkDocs DSFR : blocs dsfr_structure (alertes, accordéons, cartes, tuiles, onglets…) et composants de l'en-tête (bandeau, fil d'Ariane, sommaire).",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "publisher": "dsnumrh4",
   "author": {
     "name": "Bastien (bastienR17)",
@@ -122,6 +122,60 @@
         "command": "dsfrPreview.toggle",
         "title": "Activer / désactiver l'aperçu DSFR",
         "category": "DSFR"
+      },
+      {
+        "command": "dsfrPreview.newVersion",
+        "title": "Nouvelle version (suivi des modifications)",
+        "category": "DSFR",
+        "icon": "$(history)"
+      },
+      {
+        "command": "dsfrPreview.pastePlainFromWord",
+        "title": "Coller depuis Word ou Excel (texte seul)",
+        "category": "DSFR",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "dsfrPreview.checkWorkspace",
+        "title": "Vérifier toutes les pages du dossier (mode développeur)",
+        "category": "DSFR",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "dsfrPreview.format.bold",
+        "title": "Gras",
+        "category": "DSFR",
+        "icon": "$(bold)"
+      },
+      {
+        "command": "dsfrPreview.format.italic",
+        "title": "Italique",
+        "category": "DSFR",
+        "icon": "$(italic)"
+      },
+      {
+        "command": "dsfrPreview.format.heading",
+        "title": "Titre",
+        "category": "DSFR",
+        "icon": "$(text-size)"
+      },
+      {
+        "command": "dsfrPreview.format.bulletList",
+        "title": "Liste à puces",
+        "category": "DSFR",
+        "icon": "$(list-unordered)"
+      },
+      {
+        "command": "dsfrPreview.format.numberedList",
+        "title": "Liste numérotée",
+        "category": "DSFR",
+        "icon": "$(list-ordered)"
+      },
+      {
+        "command": "dsfrPreview.format.link",
+        "title": "Lien",
+        "category": "DSFR",
+        "icon": "$(link)"
       }
     ],
     "configuration": {
@@ -228,20 +282,75 @@
           "type": "boolean",
           "default": true,
           "description": "Ouvrir l'aperçu DSFR à côté automatiquement à la première page Markdown ouverte (une fois par fenêtre)."
+        },
+        "dsfrPreview.formatBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Afficher la barre de mise en forme en haut des pages Markdown : gras, italique, titre, listes, lien et nouvelle version."
+        },
+        "dsfrPreview.pasteFromWord": {
+          "type": "boolean",
+          "default": true,
+          "description": "Transformer en Markdown ce qui est collé depuis Word, Excel, Google Docs ou une page web (titres, gras, listes, tableaux, liens). Le collage en simple texte reste proposé par le bouton qui apparaît après le collage."
+        },
+        "dsfrPreview.devMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Mode développeur : affiche dans la palette des commandes « Vérifier toutes les pages du dossier » (toujours accessible par Ctrl+Alt+Maj+V, ou Cmd+Alt+Maj+V sur Mac)."
         }
       }
     },
     "menus": {
       "editor/title": [
         {
+          "command": "dsfrPreview.format.bold",
+          "when": "editorLangId == markdown && config.dsfrPreview.formatBar && !notebookEditorFocused && !isInDiffEditor",
+          "group": "navigation@-40"
+        },
+        {
+          "command": "dsfrPreview.format.italic",
+          "when": "editorLangId == markdown && config.dsfrPreview.formatBar && !notebookEditorFocused && !isInDiffEditor",
+          "group": "1_dsfr@1"
+        },
+        {
+          "command": "dsfrPreview.format.heading",
+          "when": "editorLangId == markdown && config.dsfrPreview.formatBar && !notebookEditorFocused && !isInDiffEditor",
+          "group": "navigation@-38"
+        },
+        {
+          "command": "dsfrPreview.format.bulletList",
+          "when": "editorLangId == markdown && config.dsfrPreview.formatBar && !notebookEditorFocused && !isInDiffEditor",
+          "group": "navigation@-37"
+        },
+        {
+          "command": "dsfrPreview.format.numberedList",
+          "when": "editorLangId == markdown && config.dsfrPreview.formatBar && !notebookEditorFocused && !isInDiffEditor",
+          "group": "navigation@-36"
+        },
+        {
+          "command": "dsfrPreview.format.link",
+          "when": "editorLangId == markdown && config.dsfrPreview.formatBar && !notebookEditorFocused && !isInDiffEditor",
+          "group": "navigation@-35"
+        },
+        {
+          "command": "dsfrPreview.newVersion",
+          "when": "editorLangId == markdown && config.dsfrPreview.formatBar && !notebookEditorFocused && !isInDiffEditor",
+          "group": "navigation@-34"
+        },
+        {
           "command": "dsfrPreview.open",
           "when": "editorLangId == markdown && !notebookEditorFocused",
-          "group": "navigation@-10"
+          "group": "navigation@-50"
         }
       ],
       "editor/context": [
         {
           "command": "dsfrPreview.insertComponent",
+          "when": "editorLangId == markdown",
+          "group": "navigation@8"
+        },
+        {
+          "command": "dsfrPreview.newVersion",
           "when": "editorLangId == markdown",
           "group": "navigation@8"
         },
@@ -299,6 +408,34 @@
         {
           "command": "dsfrPreview.insertComponent",
           "when": "editorLangId == markdown"
+        },
+        {
+          "command": "dsfrPreview.checkWorkspace",
+          "when": "config.dsfrPreview.devMode"
+        },
+        {
+          "command": "dsfrPreview.format.bold",
+          "when": "editorLangId == markdown"
+        },
+        {
+          "command": "dsfrPreview.format.italic",
+          "when": "editorLangId == markdown"
+        },
+        {
+          "command": "dsfrPreview.format.heading",
+          "when": "editorLangId == markdown"
+        },
+        {
+          "command": "dsfrPreview.format.bulletList",
+          "when": "editorLangId == markdown"
+        },
+        {
+          "command": "dsfrPreview.format.numberedList",
+          "when": "editorLangId == markdown"
+        },
+        {
+          "command": "dsfrPreview.format.link",
+          "when": "editorLangId == markdown"
         }
       ]
     },
@@ -308,6 +445,11 @@
         "key": "ctrl+alt+d",
         "mac": "cmd+shift+alt+d",
         "when": "editorLangId == markdown"
+      },
+      {
+        "command": "dsfrPreview.checkWorkspace",
+        "key": "ctrl+alt+shift+v",
+        "mac": "cmd+alt+shift+v"
       }
     ],
     "grammars": [
@@ -321,13 +463,16 @@
     ],
     "configurationDefaults": {
       "[markdown]": {
-        "editor.wordWrap": "on"
+        "editor.wordWrap": "on",
+        "editor.pasteAs.preferences": [
+          "markdown.dsfr"
+        ]
       }
     }
   },
   "scripts": {
     "test": "npm run test:js && npm run test:python",
-    "test:js": "node test/errors.js && node test/snippets.js && node test/frontmatter.js && node test/frontmatter-fix.js && node test/lint.js && node test/assist.js && node test/grammar.js && node test/folding.js && node test/site-frame.js && node test/component-menu.js && node test/component-panel.js && node test/decorations.js && node test/links.js && node test/quality.js && node test/samples.js && node test/extension-host.js",
+    "test:js": "node test/errors.js && node test/snippets.js && node test/frontmatter.js && node test/frontmatter-fix.js && node test/lint.js && node test/assist.js && node test/grammar.js && node test/folding.js && node test/site-frame.js && node test/component-menu.js && node test/component-panel.js && node test/html-to-markdown.js && node test/version-row.js && node test/format.js && node test/decorations.js && node test/links.js && node test/quality.js && node test/samples.js && node test/extension-host.js",
     "test:python": "cd test && python3 compare.py && python3 doc_check.py && python3 frontmatter_mkdocs.py",
     "test:browser": "cd test && python3 preview_browser.py && python3 panel_browser.py",
     "package": "vsce package"

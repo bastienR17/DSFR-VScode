@@ -63,6 +63,24 @@ avec les flèches puis **Entrée**.
 
 La liste complète est dans le [README](../README.md#snippets).
 
+### Reprendre un ancien mode opératoire Word
+
+Copier le texte dans Word (ou Excel, Google Docs), puis **Ctrl+V** dans la page : titres, gras, listes et
+tableaux arrivent déjà en Markdown. Les images ne suivent pas : un repère vert `<!-- Image copiée depuis Word… -->`
+indique où les ajouter (après les avoir déposées dans le répertoire des images, avec le composant « Image »).
+Pour coller en simple texte, cliquer sur le petit bouton qui apparaît après le collage.
+
+### Mettre en forme sans retenir les symboles
+
+Les boutons en haut à droite de la page marchent comme dans Word : sélectionner le texte, puis
+**B** (gras), **aA** (titre), puces, numéros ou lien. L'italique est dans le menu **…**.
+
+### Nouvelle version de la page
+
+Cliquer sur le bouton **⟲** (à côté du lien) : une ligne est ajoutée au tableau « Suivi des modifications » avec
+le numéro suivant et la date du jour. Écrire ce qui a changé, **Tab** pour changer l'émetteur si besoin.
+Si la page n'a pas encore ce tableau, l'extension propose de l'ajouter sous le titre.
+
 ## 4. Corriger une erreur
 
 L'extension vérifie la page ouverte pendant la frappe :

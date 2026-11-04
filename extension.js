@@ -30,6 +30,9 @@ const { DOC_SIRH } = require('./lib/site-frame');
 const { buildMenu, headerPlacement } = require('./lib/component-menu');
 const { panelHtml } = require('./lib/component-panel');
 const { blockDecorations, COLORS } = require('./lib/decorations');
+const { htmlToMarkdown, tabsToTable, plainToMarkdown, surround } = require('./lib/html-to-markdown');
+const { addVersionRow } = require('./lib/version-row');
+const format = require('./lib/format');
 
 const SECTION = 'dsfrPreview';
 let statusItem = null;
@@ -56,6 +59,7 @@ function config() {
     siteBrand: c.get('siteBrand', DOC_SIRH.intitule),
     siteTitle: c.get('siteTitle', DOC_SIRH.titre),
     siteTagline: c.get('siteTagline', DOC_SIRH.sousTitre),
+    pasteFromWord: c.get('pasteFromWord', true),
   };
 }
 
@@ -178,6 +182,7 @@ const EXCLUDED_DIRS = '**/{node_modules,.git,site,venv,.venv}/**';
 // Délai après la dernière frappe avant de réanalyser la page (ms).
 const LINT_DELAY = 300;
 let diagnostics = null;
+let folderDiagnostics = null; // résultats de « Vérifier tout le dossier » (pages non ouvertes)
 const lintTimers = new Map();
 // Analyse des blocs DSFR : le même plugin que l'aperçu, avec un markdown-it privé (lib/lint.js).
 const lintBlocks = createLinter({ mkdocsCompat: () => config().mkdocsCompat });
@@ -317,7 +322,14 @@ function lintDocument(document) {
     return;
   }
   const text = document.getText();
-  diagnostics.set(document.uri, frontMatterDiagnostics(document, text).concat(blockDiagnostics(text), siteDiagnostics(document, text), qualityDiagnostics(document, text)));
+  diagnostics.set(document.uri, pageDiagnostics(document, text));
+  // La page ouverte est suivie en direct : son résultat de « Vérifier tout le dossier » n'a plus lieu d'être
+  if (folderDiagnostics) folderDiagnostics.delete(document.uri);
+}
+
+/** Tous les problèmes d'une page (ouverte ou simplement lue sur le disque). */
+function pageDiagnostics(document, text) {
+  return frontMatterDiagnostics(document, text).concat(blockDiagnostics(text), siteDiagnostics(document, text), qualityDiagnostics(document, text));
 }
 
 // Pendant la frappe, on attend une courte pause avant de réanalyser.
@@ -697,6 +709,293 @@ function createAssistProviders(context) {
   return { completion, hover };
 }
 
+/* ------------------------------------------------------------------ */
+/* Coller depuis Word, Excel, Google Docs ou une page web               */
+/* (lib/html-to-markdown.js)                                          */
+/* ------------------------------------------------------------------ */
+
+const PASTE_KIND = () => vscode.DocumentDropOrPasteEditKind.Empty.append('markdown', 'dsfr');
+const SOURCE_LABEL = { word: 'Word', excel: 'Excel', web: 'la page copiée' };
+
+// Texte autour du collage, pour séparer d'une ligne vide les tableaux, listes et titres collés
+function aroundOf(document, range) {
+  const line = document.lineAt(range.start.line).text;
+  const endLine = document.lineAt(range.end.line).text;
+  return {
+    before: line.slice(0, range.start.character),
+    after: endLine.slice(range.end.character),
+    prevLine: range.start.line > 0 ? document.lineAt(range.start.line - 1).text : '',
+    nextLine: range.end.line + 1 < document.lineCount ? document.lineAt(range.end.line + 1).text : '',
+  };
+}
+
+/**
+ * Collage dans une page Markdown : le contenu copié depuis Word (ou Excel, Google Docs, une page web)
+ * devient du Markdown propre. Le simple texte reste disponible avec le bouton qui apparaît après le
+ * collage ; réglage dsfrPreview.pasteFromWord.
+ */
+function createPasteProvider() {
+  return {
+    async provideDocumentPasteEdits(document, ranges, dataTransfer, context, token) {
+      if (!isEnabled() || !config().pasteFromWord || !ranges.length) return undefined;
+      if (dataTransfer.get('vscode-editor-data')) return undefined; // copie faite dans VS Code : collage normal
+      const asked = context && context.triggerKind === vscode.DocumentPasteTriggerKind.PasteAs;
+      let markdown = null;
+      let title = '';
+      const htmlItem = dataTransfer.get('text/html');
+      const html = htmlItem ? await htmlItem.asString() : '';
+      if (html) {
+        const r = htmlToMarkdown(html);
+        if (r.markdown && (r.rich || asked)) {
+          markdown = r.markdown;
+          title = 'Markdown DSFR (depuis ' + SOURCE_LABEL[r.source] + ')';
+        }
+      }
+      if (!markdown) {
+        const textItem = dataTransfer.get('text/plain');
+        const text = textItem ? await textItem.asString() : '';
+        const table = tabsToTable(text);
+        if (table) { markdown = table; title = 'Tableau Markdown (depuis Excel)'; }
+        else if (asked && text) { markdown = plainToMarkdown(text); title = 'Markdown DSFR (texte de Word)'; }
+      }
+      if (!markdown || (token && token.isCancellationRequested)) return undefined;
+      return [new vscode.DocumentPasteEdit(surround(markdown, aroundOf(document, ranges[0])), title, PASTE_KIND())];
+    },
+  };
+}
+
+/**
+ * Commande « Coller depuis Word ou Excel (texte seul) » : pour les versions de VS Code qui ne transmettent
+ * pas la mise en forme copiée. Lignes de Word en paragraphes, puces en listes, colonnes d'Excel en tableau.
+ */
+async function pastePlainFromWord() {
+  const editor = activeMarkdownEditor();
+  if (!editor) return;
+  const text = await vscode.env.clipboard.readText();
+  if (!text.trim()) {
+    vscode.window.showInformationMessage('Le presse-papiers est vide : copiez d\'abord le texte dans Word ou Excel.');
+    return;
+  }
+  const markdown = plainToMarkdown(text);
+  await editor.edit((b) => {
+    for (const sel of editor.selections) b.replace(sel, surround(markdown, aroundOf(editor.document, sel)));
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* Nouvelle version du suivi des modifications (lib/version-row.js)     */
+/* ------------------------------------------------------------------ */
+
+function activeMarkdownEditor() {
+  const editor = vscode.window.activeTextEditor;
+  if (editor && editor.document.languageId === 'markdown') return editor;
+  vscode.window.showWarningMessage('Ouvrez d\'abord une page Markdown (fichier .md).');
+  return null;
+}
+
+const linesOfDocument = (document) => document.getText().split('\n').map((l) => l.replace(/\r$/, ''));
+
+/**
+ * Commande « Nouvelle version » : une ligne est ajoutée au tableau « Suivi des modifications », avec le
+ * numéro suivant, la date du jour et l'émetteur de la dernière version ; le curseur est placé sur « ce
+ * qui a changé ». Sans tableau, propose de l'ajouter sous le titre de la page.
+ */
+async function newVersion() {
+  const editor = activeMarkdownEditor();
+  if (!editor) return;
+  const doc = editor.document;
+  const lines = linesOfDocument(doc);
+  const r = addVersionRow(lines, { today: new Date() });
+  if (r.error) {
+    if (!r.noTable) { vscode.window.showWarningMessage(r.error); return; }
+    const answer = await vscode.window.showInformationMessage(r.error, 'Ajouter le tableau');
+    if (answer !== 'Ajouter le tableau') return;
+    const suivi = buildMenu(require('./snippets/dsfr.json')).find((m) => m.prefix === 'dsfr-sirh-suivi');
+    const body = suivi.body.replace(/\n?\$0\s*$/, '');
+    const title = lines.findIndex((l) => /^# /.test(l));
+    if (title < 0) { await editor.insertSnippet(new vscode.SnippetString(body + '\n')); return; }
+    // Sous le titre de la page, séparé par des lignes vides
+    const next = lines[title + 1];
+    await editor.insertSnippet(new vscode.SnippetString('\n\n' + body + (next !== undefined && next.trim() ? '\n' : '')), doc.lineAt(title).range.end);
+    return;
+  }
+  // Dernière ligne du fichier sans retour à la ligne final : on insère à la fin de cette ligne
+  if (r.line >= doc.lineCount) {
+    await editor.insertSnippet(new vscode.SnippetString('\n' + r.snippet.replace(/\n$/, '')), doc.lineAt(doc.lineCount - 1).range.end);
+  } else {
+    await editor.insertSnippet(new vscode.SnippetString(r.snippet), new vscode.Position(r.line, 0));
+  }
+  editor.revealRange(new vscode.Range(r.line, 0, r.line, 0), vscode.TextEditorRevealType.InCenterIfOutsideViewport);
+  vscode.window.setStatusBarMessage('$(history) ' + r.version + ' ajoutée au suivi des modifications : écrivez ce qui a changé, puis Tab pour l\'émetteur', 8000);
+}
+
+/* ------------------------------------------------------------------ */
+/* Barre de mise en forme (lib/format.js)                              */
+/* ------------------------------------------------------------------ */
+
+/** Gras ou italique sur chaque sélection (ou le mot sous le curseur). */
+async function formatInline(kind) {
+  const editor = activeMarkdownEditor();
+  if (!editor) return;
+  const doc = editor.document;
+  const text = doc.getText();
+  const results = editor.selections
+    .map((sel) => format.toggleInline(text, doc.offsetAt(sel.start), doc.offsetAt(sel.end), kind))
+    .sort((a, b) => a.start - b.start)
+    .filter((r, i, all) => !i || r.start >= all[i - 1].end); // sélections qui se chevauchent : la première
+  const ok = await editor.edit((b) => {
+    for (const r of results) b.replace(new vscode.Range(doc.positionAt(r.start), doc.positionAt(r.end)), r.text);
+  });
+  if (!ok) return;
+  let delta = 0;
+  const next = [];
+  for (const r of results) {
+    next.push([r.select[0] + delta, r.select[1] + delta]);
+    delta += r.text.length - (r.end - r.start);
+  }
+  editor.selections = next.map(([a, b]) => new vscode.Selection(doc.positionAt(a), doc.positionAt(b)));
+}
+
+// Lignes concernées par la sélection (une sélection qui finit en début de ligne n'y entre pas)
+function selectedLines(editor) {
+  const sel = editor.selection;
+  const to = sel.end.line > sel.start.line && sel.end.character === 0 ? sel.end.line - 1 : sel.end.line;
+  return { from: sel.start.line, to };
+}
+
+async function replaceLines(editor, from, to, lines) {
+  const doc = editor.document;
+  const range = new vscode.Range(from, 0, to, doc.lineAt(to).text.length);
+  await editor.edit((b) => b.replace(range, lines.join('\n')));
+  const last = from + lines.length - 1;
+  editor.selection = new vscode.Selection(new vscode.Position(last, doc.lineAt(last).text.length), new vscode.Position(last, doc.lineAt(last).text.length));
+}
+
+async function formatHeading() {
+  const editor = activeMarkdownEditor();
+  if (!editor) return;
+  const picked = await vscode.window.showQuickPick([
+    { label: '$(text-size) Titre de partie', description: '## Titre', level: 2 },
+    { label: '$(text-size) Sous-partie', description: '### Titre', level: 3 },
+    { label: '$(text-size) Sous-sous-partie', description: '#### Titre', level: 4 },
+    { label: '$(whitespace) Texte normal', description: 'retire le titre', level: 0 },
+  ], { title: 'Mettre en titre', placeHolder: 'Niveau du titre (le titre de la page, « # », est déjà en haut de la page)' });
+  if (!picked) return;
+  const { from, to } = selectedLines(editor);
+  const r = format.setHeading(linesOfDocument(editor.document), from, to, picked.level);
+  await replaceLines(editor, r.from, r.to, r.lines);
+}
+
+async function formatList(kind) {
+  const editor = activeMarkdownEditor();
+  if (!editor) return;
+  const { from, to } = selectedLines(editor);
+  const r = format.toggleList(linesOfDocument(editor.document), from, to, kind);
+  await replaceLines(editor, r.from, r.to, r.lines);
+}
+
+async function formatLink() {
+  const editor = activeMarkdownEditor();
+  if (!editor) return;
+  const sel = editor.selection;
+  let label = editor.document.getText(sel);
+  let url = '';
+  if (format.looksLikeUrl(label) && !label.includes(' ')) { url = label.trim(); label = ''; }
+  if (!url) {
+    const clip = (await vscode.env.clipboard.readText()).trim();
+    url = await vscode.window.showInputBox({
+      title: 'Ajouter un lien',
+      prompt: 'Adresse du lien : https://… pour un site, ou le chemin d\'une autre page (par exemple ../GA-PAYE/page.md)',
+      value: format.looksLikeUrl(clip) && !clip.includes('\n') ? clip : 'https://',
+      validateInput: (v) => (v.trim() && v.trim() !== 'https://' ? null : 'Indiquez l\'adresse du lien'),
+    });
+    if (!url) return;
+  }
+  await editor.insertSnippet(new vscode.SnippetString(format.linkSnippet(label, url)), sel);
+}
+
+/* ------------------------------------------------------------------ */
+/* Mode développeur : vérifier toutes les pages du dossier              */
+/* (raccourci Ctrl+Alt+Maj+V, ou Cmd+Alt+Maj+V sur Mac)                */
+/* ------------------------------------------------------------------ */
+
+// Page lue sur le disque, avec ce qu'utilisent les vérifications (sans l'ouvrir dans VS Code)
+function fileDocument(uri, text) {
+  const lines = text.split('\n');
+  return {
+    uri,
+    languageId: 'markdown',
+    lineCount: lines.length,
+    getText: () => text,
+    lineAt: (i) => {
+      const t = (lines[Math.max(0, Math.min(i, lines.length - 1))] || '').replace(/\r$/, '');
+      return { text: t, range: new vscode.Range(i, 0, i, t.length) };
+    },
+  };
+}
+
+async function checkWorkspace() {
+  const files = await vscode.workspace.findFiles('**/*.{md,markdown}', EXCLUDED_DIRS);
+  if (!files.length) {
+    vscode.window.showInformationMessage('Aucune page Markdown dans le dossier ouvert.');
+    return;
+  }
+  const S = vscode.DiagnosticSeverity;
+  const pages = [];
+  const cancelled = await vscode.window.withProgress({
+    location: vscode.ProgressLocation.Notification,
+    title: 'Vérification des ' + files.length + ' pages du dossier',
+    cancellable: true,
+  }, async (progress, token) => {
+    for (const uri of files) {
+      if (token.isCancellationRequested) return true;
+      const open = vscode.workspace.textDocuments.find((d) => d.uri.toString() === uri.toString());
+      let list;
+      if (open) {
+        lintDocument(open);
+        list = pageDiagnostics(open, open.getText());
+      } else {
+        let text;
+        try { text = Buffer.from(await vscode.workspace.fs.readFile(uri)).toString('utf8'); } catch (e) { continue; }
+        list = pageDiagnostics(fileDocument(uri, text), text);
+        folderDiagnostics.set(uri, list);
+      }
+      const errors = list.filter((d) => d.severity === S.Error).length;
+      const warnings = list.filter((d) => d.severity === S.Warning).length;
+      if (errors + warnings) pages.push({ uri, errors, warnings, first: list.find((d) => d.severity <= S.Warning) });
+      progress.report({ increment: 100 / files.length, message: vscode.workspace.asRelativePath(uri) });
+    }
+    return false;
+  });
+  if (cancelled) return;
+  if (!pages.length) {
+    vscode.window.showInformationMessage('Les ' + files.length + ' pages du dossier sont sans erreur.');
+    return;
+  }
+  pages.sort((a, b) => b.errors - a.errors || b.warnings - a.warnings || a.uri.fsPath.localeCompare(b.uri.fsPath));
+  const total = pages.reduce((n, p) => n + p.errors + p.warnings, 0);
+  const items = [
+    { label: '$(list-flat) Tout voir dans le panneau Problèmes', all: true },
+    { label: '', kind: vscode.QuickPickItemKind.Separator },
+    ...pages.map((p) => ({
+      label: (p.errors ? '$(error) ' : '$(warning) ') + vscode.workspace.asRelativePath(p.uri),
+      description: plural(p.errors + p.warnings, 'point') + (p.errors ? ' à corriger' : ' à vérifier'),
+      detail: p.first ? 'Ligne ' + (p.first.range.start.line + 1) + ' : ' + p.first.message : undefined,
+      page: p,
+    })),
+  ];
+  const picked = await vscode.window.showQuickPick(items, {
+    title: plural(total, 'point') + ' dans ' + plural(pages.length, 'page') + ' sur ' + files.length,
+    placeHolder: 'Choisir une page pour voir ses points à corriger',
+    matchOnDescription: true,
+    matchOnDetail: true,
+  });
+  if (!picked) return;
+  if (picked.all) { await vscode.commands.executeCommand('workbench.actions.view.problems'); return; }
+  await vscode.window.showTextDocument(picked.page.uri, { preview: false });
+  await listProblems(picked.page.uri);
+}
+
 // Commande « Activer / désactiver l'aperçu DSFR » (aussi déclenchée par l'indicateur).
 async function toggle() {
   const on = isEnabled();
@@ -738,6 +1037,16 @@ function activate(context) {
     vscode.commands.registerCommand('dsfrPreview.listProblems', listProblems),
     vscode.window.registerWebviewViewProvider('dsfrPreview.components', createComponentPanel(context)),
     vscode.commands.registerCommand('dsfrPreview.showComponents', () => vscode.commands.executeCommand('dsfrPreview.components.focus')),
+    vscode.commands.registerCommand('dsfrPreview.newVersion', newVersion),
+    vscode.commands.registerCommand('dsfrPreview.pastePlainFromWord', pastePlainFromWord),
+    vscode.commands.registerCommand('dsfrPreview.checkWorkspace', checkWorkspace),
+    vscode.commands.registerCommand('dsfrPreview.format.bold', () => formatInline('bold')),
+    vscode.commands.registerCommand('dsfrPreview.format.italic', () => formatInline('italic')),
+    vscode.commands.registerCommand('dsfrPreview.format.heading', formatHeading),
+    vscode.commands.registerCommand('dsfrPreview.format.bulletList', () => formatList('bullet')),
+    vscode.commands.registerCommand('dsfrPreview.format.numberedList', () => formatList('numbered')),
+    vscode.commands.registerCommand('dsfrPreview.format.link', formatLink),
+    folderDiagnostics = vscode.languages.createDiagnosticCollection('dsfr-dossier'),
     problemsItem,
     vscode.languages.onDidChangeDiagnostics(updateProblemsCount),
     diagnostics = vscode.languages.createDiagnosticCollection('dsfr'),
@@ -760,6 +1069,13 @@ function activate(context) {
     vscode.workspace.onDidSaveTextDocument(() => lintOpenDocuments()),
     { dispose: () => { for (const t of lintTimers.values()) clearTimeout(t); lintTimers.clear(); } }
   );
+  // Collage depuis Word (VS Code 1.97 et suivants ; avant, la commande « Coller depuis Word ou Excel »)
+  if (vscode.languages.registerDocumentPasteEditProvider && vscode.DocumentPasteEdit && vscode.DocumentDropOrPasteEditKind) {
+    context.subscriptions.push(vscode.languages.registerDocumentPasteEditProvider({ language: 'markdown' }, createPasteProvider(), {
+      providedPasteEditKinds: [PASTE_KIND()],
+      pasteMimeTypes: ['text/html', 'text/plain'],
+    }));
+  }
   trackMarkdownEditor(vscode.window.activeTextEditor);
   decorationTypes = createDecorationTypes();
   for (const t of Object.values(decorationTypes)) context.subscriptions.push(t);

@@ -53,11 +53,22 @@ Extension créée par **Bastien** ([@bastienR17](https://github.com/bastienR17))
   bouton **＋ Insérer un composant** qui les présente rangés par familles, avec une phrase d'explication.
 - **Une boîte à composants** dans la barre de gauche (icône **DSFR**) : chaque composant avec une miniature de son
   rendu, une recherche, et un clic pour l'insérer dans la page.
+- **Coller depuis Word, Excel ou Google Docs** : le contenu collé devient du Markdown propre (titres, gras,
+  italique, listes et sous-listes, tableaux, liens). Les images de Word, qui sont sur l'ordinateur, sont
+  remplacées par un repère invisible sur le site, à l'endroit où les ajouter. Le bouton qui apparaît après le
+  collage permet de revenir au simple texte.
+- **Une barre de mise en forme**, comme dans Word, en haut de chaque page : gras, titre, listes à puces et
+  numérotées, lien (italique dans le menu « … »). Un second clic retire la mise en forme.
+- **Nouvelle version en un clic** (bouton ⟲ de la barre) : une ligne est ajoutée au tableau « Suivi des
+  modifications », avec le numéro suivant (V2 → V3), la date du jour et l'émetteur de la version précédente ;
+  il ne reste qu'à écrire ce qui a changé.
 - **Pensé pour les rédacteurs non techniciens** : les messages sont en français simple (ce qui ne va pas, et quoi faire) ;
   le bas de l'écran indique « ✓ Page sans erreur » en vert, ou « N points à corriger » en rouge ; l'aperçu s'ouvre
   tout seul et les lignes longues passent à la ligne.
 
 ![Erreurs signalées dans l'aperçu](docs/images/erreurs.png)
+
+![La barre de mise en forme en haut de la page : aperçu, gras, titre, listes, lien, nouvelle version](docs/images/mise-en-forme.png)
 
 <img src="docs/images/panneau.png" alt="La boîte à composants : miniatures des composants Doc SIRH, rangés par familles" width="340">
 
@@ -274,6 +285,14 @@ le mieux est de corriger aussi ce script pour qu'il mette les valeurs entre guil
 | `dsfrPreview.pageLayout` | `site`, `content` | `site` | Page entière comme sur le site (en-tête, menu latéral, pied de page), ou contenu seul |
 | `dsfrPreview.desktopWidth` | `true`, `false` | `false` | Page à la largeur d'un ordinateur (1280 px), réduite pour tenir dans l'aperçu |
 | `dsfrPreview.siteBrand`, `siteTitle`, `siteTagline` | texte | ceux de Doc SIRH | Bloc-marque, titre et sous-titre de l'en-tête, si le `mkdocs.yml` du site n'est pas trouvé |
+| `dsfrPreview.formatBar` | `true`, `false` | `true` | Barre de mise en forme en haut des pages Markdown |
+| `dsfrPreview.pasteFromWord` | `true`, `false` | `true` | Transformer en Markdown ce qui est collé depuis Word, Excel, Google Docs ou une page web |
+| `dsfrPreview.devMode` | `true`, `false` | `false` | Mode développeur : « Vérifier toutes les pages du dossier » dans la palette des commandes |
+
+**Mode développeur.** **Ctrl+Alt+Maj+V** (**Cmd+Alt+Maj+V** sur Mac) vérifie toutes les pages du dossier ouvert
+et liste celles qui ont des points à corriger, de la plus touchée à la moins touchée ; les points des pages non
+ouvertes s'affichent aussi dans le panneau Problèmes. La commande n'apparaît dans la palette qu'avec
+`dsfrPreview.devMode`.
 
 ## Limites connues
 

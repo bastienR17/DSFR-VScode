@@ -14,6 +14,11 @@ assert.strictEqual(get('dsfr-alerte').label, 'Alerte');
 assert.strictEqual(get('dsfr-sirh-capture').label, 'Capture d\'écran');
 assert.strictEqual(get('dsfr-sirh-capture').icon, 'device-camera');
 assert(get('dsfr-sirh-capture').detail.startsWith('Capture d\'écran hébergée'), get('dsfr-sirh-capture').detail);
+// L'image Doc SIRH est rangée avec les blocs de l'équipe, juste après la capture d'écran
+assert.strictEqual(get('dsfr-img').family, 'sirh');
+assert.strictEqual(get('dsfr-img').label, 'Image');
+assert.strictEqual(items[items.indexOf(get('dsfr-sirh-capture')) + 1].prefix, 'dsfr-img');
+assert(!items.some((i) => i.family === 'media' && /^dsfr-img$/.test(i.prefix)));
 assert.strictEqual(get('dsfr-bandeau').label, 'Bandeau d\'information');
 assert(get('dsfr-tuile-3').body.includes('/// tile |'));
 

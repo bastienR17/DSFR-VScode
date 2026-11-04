@@ -2,6 +2,32 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## 0.13.0 — novembre 2026
+
+### Ajouts
+- **Coller depuis Word, Excel ou Google Docs** : ce qui est collé dans une page devient du Markdown propre —
+  titres, paragraphes, gras et italique (sans espace collé aux `**`), listes et sous-listes de Word (4 espaces,
+  comme le veut le site), tableaux (cellules fusionnées complétées), liens. Deux listes à la suite restent
+  séparées sur le site. Les images de Word sont remplacées par un repère invisible sur le site. Le bouton qui
+  apparaît après le collage permet de revenir au simple texte ; réglage `dsfrPreview.pasteFromWord`.
+  Pour les versions de VS Code antérieures à 1.97 : commande « Coller depuis Word ou Excel (texte seul) ».
+- **Barre de mise en forme** en haut des pages : gras, titre, listes à puces et numérotées, lien, italique
+  (menu « … ») ; un second clic retire la mise en forme. Réglage `dsfrPreview.formatBar`.
+- **Nouvelle version en un clic** : ligne ajoutée au tableau « Suivi des modifications » (numéro suivant, date
+  du jour, émetteur repris), en bas ou en haut du tableau selon son ordre ; sans tableau, propose de l'ajouter.
+- **Mode développeur** : **Ctrl+Alt+Maj+V** (Cmd+Alt+Maj+V sur Mac) vérifie toutes les pages du dossier et
+  liste celles qui ont des points à corriger. Visible dans la palette avec `dsfrPreview.devMode`.
+
+### Vérifications
+- Testé dans un vrai VS Code 1.105 (code-server) : barre, nouvelle version, collage depuis Word et
+  vérification du dossier.
+
+## 0.12.1 — novembre 2026
+
+### Modifications
+- **Image Doc SIRH** (`dsfr-img`) est rangée avec les blocs de l'équipe Doc SIRH, juste après la capture d'écran,
+  dans la boîte à composants et dans « Insérer un composant ».
+
 ## 0.12.0 — octobre 2026
 
 ### Ajouts

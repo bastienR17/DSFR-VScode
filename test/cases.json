@@ -89,5 +89,7 @@
 "###**Gras** et `code`\n",
 "#!/bin/bash\n",
 "## Normal\n",
-"#\n"
+"#\n",
+"## Rechercher l’acte\n\nDans l’écran **Gestion des actes**, cliquer sur **Rechercher** puis saisir le *matricule*.\n\n- Premier point\n    - Sous-point\n- Deuxième point avec un [lien](https://docsirh.e2.rie.gouv.fr/GA-PAYE/)\n\n<!-- -->\n\n1. Ouvrir RenoiRH\n2. Valider \\*2\\* fois\n\n| **Version** | **Date** | **Suivi** |\n|----|----|----|\n| V1 | 01/02/2026 | Création<br>Ligne 2 \\| pipe |\n| Fusion |   | x |\n\n<!-- Image copiée depuis Word : déposez-la dans le répertoire des images, puis insérez-la ici avec « Image » (dsfr-img) -->\n\n\\# pas un titre\n",
+"## Saisir la date\n\nTexte **gras** et *italique*\n\n- Un\n    - Un-a\n- Deux\n\n| **Champ** | **Valeur** |\n|----|----|\n| Date d'effet | 01/01/2027 |\n"
 ]

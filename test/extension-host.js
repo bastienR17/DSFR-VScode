@@ -10,6 +10,50 @@ const workspaceSettings = {};
 const updates = [];
 const calls = [];
 const webviewProviders = {};
+const otherDiagStores = {};
+let pasteProvider = null;
+let clipboardText = '';
+const progressTitles = [];
+const inputBoxes = [];
+let inputAnswer;
+
+// Éditeur modifiable (texte, sélections, modifications, snippets), comme vscode.TextEditor
+function editableEditor(uri, initial) {
+  let text = initial;
+  const off = (p) => { const ls = text.split('\n'); let n = 0; for (let i = 0; i < p.line; i++) n += ls[i].length + 1; return n + p.character; };
+  const pos = (o) => { const before = text.slice(0, o).split('\n'); return new vscode.Position(before.length - 1, before[before.length - 1].length); };
+  const document = {
+    uri, languageId: 'markdown',
+    get lineCount() { return text.split('\n').length; },
+    getText: (r) => (r ? text.slice(off(r.start), off(r.end)) : text),
+    lineAt: (i) => { const t = text.split('\n')[i]; return { text: t, range: new Range(i, 0, i, t.length) }; },
+    offsetAt: off, positionAt: pos,
+  };
+  const editor = {
+    document, snippets: [], selections: [],
+    get selection() { return editor.selections[0]; },
+    set selection(s) { editor.selections = [s]; },
+    revealRange() {},
+    edit: async (cb) => {
+      const ops = [];
+      cb({ replace: (r, t) => ops.push([off(r.start), off(r.end), t]), insert: (p, t) => ops.push([off(p), off(p), t]) });
+      ops.sort((a, b) => b[0] - a[0]);
+      for (const [a, b, t] of ops) text = text.slice(0, a) + t + text.slice(b);
+      return true;
+    },
+    insertSnippet: async (snippet, at) => {
+      editor.snippets.push([snippet.value, at]);
+      const p = at || editor.selection.start;
+      const a = off(p.start ? p.start : p);
+      const b = at && at.end ? off(at.end) : a;
+      text = text.slice(0, a) + snippet.value.replace(/\$\{\d+:([^}]*)\}/g, '$1').replace(/\$\{\d+\}|\$\d+/g, '') + text.slice(b);
+      return true;
+    },
+    get text() { return text; },
+  };
+  editor.selection = new vscode.Selection(0, 0, 0, 0);
+  return editor;
+}
 let oldVsCode = false;
 class Uri {
   constructor(p) { this.fsPath = p; this.scheme = 'file'; }
@@ -26,6 +70,8 @@ let codeActionProvider = null;
 let pickItems = null;
 let pickAnswer = () => undefined;
 let pickTitle = null;
+const pickTitles = [];
+const pickHistory = [];
 let lastSelection = null;
 const statusItems = [];
 let diagnosticsListener = null;
@@ -39,6 +85,7 @@ let modalAnswer;
 const saved = [];
 class Range {
   constructor(sl, sc, el, ec) {
+    if (typeof sl === 'object') { [el, ec] = [sc.line, sc.character]; [sl, sc] = [sl.line, sl.character]; } // (début, fin)
     Object.assign(this, { sl, sc, el, ec });
     this.start = { line: sl, character: sc };
     this.end = { line: el, character: ec };
@@ -56,7 +103,7 @@ function textDocument(uri, text) {
   return {
     uri, languageId: 'markdown', lineCount: lines.length,
     getText: () => text,
-    lineAt: (i) => ({ range: new Range(i, 0, i, lines[i].replace(/\r$/, '').length) }),
+    lineAt: (i) => ({ text: lines[i].replace(/\r$/, ''), range: new Range(i, 0, i, lines[i].replace(/\r$/, '').length) }),
   };
 }
 const noop = () => ({ dispose() {} });
@@ -111,7 +158,7 @@ const vscode = {
       statusItems.push(item);
       return item;
     },
-    showQuickPick: async (items, opts) => { pickItems = items; pickTitle = opts && opts.title; return pickAnswer(items); },
+    showQuickPick: async (items, opts) => { pickItems = items; pickTitle = opts && opts.title; pickTitles.push(pickTitle); pickHistory.push(items); return pickAnswer(items); },
     onDidChangeActiveTextEditor: (fn) => { activeEditorListener = fn; return { dispose() {} }; },
     onDidChangeVisibleTextEditors: noop,
     createTextEditorDecorationType: (opts) => { const t = { opts, dispose() {} }; decorationTypes.push(t); return t; },
@@ -120,6 +167,9 @@ const vscode = {
     showInformationMessage: async (message) => { messages.push(message); return undefined; },
     showWarningMessage: async (message, options) => { messages.push(message); return options && options.modal ? modalAnswer : undefined; },
     showErrorMessage: async () => undefined,
+    withProgress: async (opts, task) => { progressTitles.push(opts.title); return task({ report() {} }, { isCancellationRequested: false }); },
+    showInputBox: async (opts) => { inputBoxes.push(opts); return inputAnswer; },
+    setStatusBarMessage: (m) => { messages.push(m); return { dispose() {} }; },
     visibleTextEditors: [],
     showTextDocument: async (target, opts) => {
       const document = target.uri ? target : { uri: target, languageId: 'markdown' };
@@ -138,17 +188,22 @@ const vscode = {
     },
   },
   languages: {
-    createDiagnosticCollection: () => ({
-      set: (uri, list) => diagStore.set(uri.toString(), list),
-      delete: (uri) => diagStore.delete(uri.toString()),
-      get: (uri) => diagStore.get(uri.toString()),
-      dispose() {},
-    }),
+    createDiagnosticCollection: (name) => {
+      const store = name === 'dsfr' ? diagStore : (otherDiagStores[name] = new Map());
+      return {
+        set: (uri, list) => store.set(uri.toString(), list),
+        delete: (uri) => store.delete(uri.toString()),
+        get: (uri) => store.get(uri.toString()),
+        has: (uri) => store.has(uri),
+        dispose() {},
+      };
+    },
     registerCodeActionsProvider: (selector, provider) => { codeActionProvider = provider; return { dispose() {} }; },
     registerCompletionItemProvider: (selector, provider, ...triggers) => { completionProvider = { provider, triggers }; return { dispose() {} }; },
     registerHoverProvider: (selector, provider) => { hoverProvider = provider; return { dispose() {} }; },
     registerFoldingRangeProvider: (selector, provider) => { foldingProvider = provider; return { dispose() {} }; },
     onDidChangeDiagnostics: (fn) => { diagnosticsListener = fn; return { dispose() {} }; },
+    registerDocumentPasteEditProvider: (selector, provider, metadata) => { pasteProvider = { provider, metadata }; return { dispose() {} }; },
   },
   CompletionItem: class { constructor(label, kind) { Object.assign(this, { label, kind }); } },
   CompletionItemKind: { Module: 8, Property: 9, Value: 11, Snippet: 27 },
@@ -170,8 +225,27 @@ const vscode = {
     });
     return { QuickFix: kind('quickfix') };
   })(),
-  Selection: class { constructor(l, c) { Object.assign(this, { line: l, character: c }); } },
-  TextEditorRevealType: { InCenter: 2 },
+  Selection: class {
+    constructor(l, c, el, ec) {
+      if (typeof l === 'object') { this.anchor = l; this.active = c; } else {
+        Object.assign(this, { line: l, character: c });
+        this.anchor = { line: l, character: c };
+        this.active = el === undefined ? this.anchor : { line: el, character: ec };
+      }
+      const before = this.anchor.line < this.active.line || (this.anchor.line === this.active.line && this.anchor.character <= this.active.character);
+      this.start = before ? this.anchor : this.active;
+      this.end = before ? this.active : this.anchor;
+    }
+  },
+  TextEditorRevealType: { InCenter: 2, InCenterIfOutsideViewport: 3 },
+  ProgressLocation: { Notification: 15 },
+  DocumentPasteTriggerKind: { Automatic: 0, PasteAs: 1 },
+  DocumentDropOrPasteEditKind: (() => {
+    const kind = (value) => ({ value, append: (...parts) => kind([value, ...parts].filter(Boolean).join('.')) });
+    return { Empty: kind(''), Text: kind('text') };
+  })(),
+  DocumentPasteEdit: class { constructor(insertText, title, kind) { Object.assign(this, { insertText, title, kind }); } },
+  env: { clipboard: { readText: async () => clipboardText } },
   Uri,
   ViewColumn: { One: 1, Two: 2, Beside: -2 },
   StatusBarAlignment: { Right: 2 },
@@ -498,6 +572,112 @@ async function lintVia(document) {
   assert.deepStrictEqual(foldingProvider.provideFoldingRanges(foldDoc), []);
   settings.enabled = true;
 
+  // Vérifier tout le dossier (mode développeur) : commande cachée de la palette, raccourci clavier
+  assert(manifest.menus.commandPalette.some((m) => m.command === 'dsfrPreview.checkWorkspace' && m.when === 'config.dsfrPreview.devMode'));
+  assert(manifest.keybindings.some((k) => k.command === 'dsfrPreview.checkWorkspace' && k.key === 'ctrl+alt+shift+v' && k.mac === 'cmd+alt+shift+v'));
+  pickAnswer = (items) => items.find((i) => i.page && i.label.endsWith('b.md'));
+  vscode.window.showTextDocument = async (target) => ({ document: { uri: target }, revealRange() {}, set selection(sel) { lastSelection = sel; } });
+  const openDoc = vscode.workspace.openTextDocument;
+  vscode.workspace.openTextDocument = async (u) => (u && u.fsPath ? textDocument(u, fs.readFileSync(u.fsPath, 'utf8')) : openDoc(u));
+  pickTitles.length = 0; pickHistory.length = 0;
+  await commands['dsfrPreview.checkWorkspace']();
+  assert(/^Vérification des \d+ pages du dossier$/.test(progressTitles[0]), progressTitles[0]);
+  assert(/^\d+ points? dans 2 pages sur \d+$/.test(pickTitles[0]), pickTitles[0]);
+  assert(pickHistory[0][0].all && pickHistory[0].filter((i) => i.page).length === 2, 'a.md et b.md (en-têtes illisibles)');
+  assert(pickHistory[0].find((i) => i.page).detail.startsWith('Ligne 2 : '), 'premier point de la page');
+  assert(otherDiagStores['dsfr-dossier'].get(new Uri(path.join(tmp, 'a.md')).toString()).length >= 1, 'points des pages non ouvertes dans le panneau Problèmes');
+  assert(!otherDiagStores['dsfr-dossier'].has(new Uri(path.join(tmp, 'b.md')).toString()), 'page ouverte : suivie en direct');
+  assert(/points? à corriger dans cette page$/.test(pickTitle), 'liste des points de la page choisie : ' + pickTitle);
+  vscode.window.showTextDocument = showDoc;
+  vscode.workspace.openTextDocument = openDoc;
+  pickAnswer = () => undefined;
+
+  // Barre de mise en forme : boutons en haut des pages Markdown (réglage dsfrPreview.formatBar)
+  const titleBar = manifest.menus['editor/title'].filter((m) => /format|newVersion/.test(m.command)).map((m) => m.command.replace('dsfrPreview.', ''));
+  assert.deepStrictEqual(titleBar, ['format.bold', 'format.italic', 'format.heading', 'format.bulletList', 'format.numberedList', 'format.link', 'newVersion']);
+  for (const id of titleBar) assert(manifest.commands.find((c) => c.command === 'dsfrPreview.' + id).icon, 'icône : ' + id);
+  // VS Code n'affiche que 7 boutons d'extension : l'aperçu et 6 boutons de mise en forme, l'italique dans « … »
+  const visible = manifest.menus['editor/title'].filter((m) => /^navigation/.test(m.group)).sort((a, b) => Number(a.group.split('@')[1]) - Number(b.group.split('@')[1])).map((m) => m.command.replace('dsfrPreview.', ''));
+  assert.deepStrictEqual(visible, ['open', 'format.bold', 'format.heading', 'format.bulletList', 'format.numberedList', 'format.link', 'newVersion']);
+  let ed = editableEditor(new Uri('/tmp/other/forme.md'), 'Cliquer sur Rechercher puis valider.\n\nUn\nDeux');
+  vscode.window.activeTextEditor = ed;
+  ed.selection = new vscode.Selection(0, 12, 0, 22);
+  await commands['dsfrPreview.format.bold']();
+  assert.strictEqual(ed.text.split('\n')[0], 'Cliquer sur **Rechercher** puis valider.');
+  assert.deepStrictEqual([ed.selection.start.character, ed.selection.end.character], [14, 24], 'mot toujours sélectionné');
+  await commands['dsfrPreview.format.bold']();
+  assert.strictEqual(ed.text.split('\n')[0], 'Cliquer sur Rechercher puis valider.', 'second clic : gras retiré');
+  ed.selections = [new vscode.Selection(0, 0, 0, 7), new vscode.Selection(0, 28, 0, 35)]; // plusieurs curseurs
+  await commands['dsfrPreview.format.italic']();
+  assert.strictEqual(ed.text.split('\n')[0], '*Cliquer* sur Rechercher puis *valider*.');
+  assert.deepStrictEqual(ed.selections.map((x) => [x.start.character, x.end.character]), [[1, 8], [31, 38]]);
+  ed.selection = new vscode.Selection(2, 0, 3, 4);
+  await commands['dsfrPreview.format.numberedList']();
+  assert.deepStrictEqual(ed.text.split('\n').slice(2), ['1. Un', '2. Deux']);
+  ed.selection = new vscode.Selection(0, 3, 0, 3);
+  pickAnswer = (items) => items.find((i) => i.level === 2);
+  await commands['dsfrPreview.format.heading']();
+  assert.strictEqual(ed.text.split('\n')[0], '## *Cliquer* sur Rechercher puis *valider*.');
+  pickAnswer = () => undefined;
+  ed = editableEditor(new Uri('/tmp/other/lien.md'), 'Voir le site.');
+  vscode.window.activeTextEditor = ed;
+  ed.selection = new vscode.Selection(0, 5, 0, 12);
+  clipboardText = 'https://www.service-public.fr/';
+  inputAnswer = 'https://www.service-public.fr/';
+  await commands['dsfrPreview.format.link']();
+  assert.strictEqual(inputBoxes[0].value, 'https://www.service-public.fr/', 'adresse copiée proposée');
+  assert.strictEqual(ed.text, 'Voir [le site](https://www.service-public.fr/).');
+
+  // Nouvelle version : ligne ajoutée au suivi des modifications, curseur sur « ce qui a changé »
+  ed = editableEditor(new Uri('/tmp/other/suivi.md'), '# T\n\n| **Version** | **Date** | **Emetteur** | **Suivi des modifications** |\n|----|----|----|----|\n| V1 | 01/02/2025 | MATTE / DSNUMRH4 | Création |\n\nSuite');
+  vscode.window.activeTextEditor = ed;
+  await commands['dsfrPreview.newVersion']();
+  const d = new Date();
+  const today = String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') + '/' + d.getFullYear();
+  assert.strictEqual(ed.text.split('\n')[5], '| V2 | ' + today + ' | MATTE / DSNUMRH4 | Ce qui a changé |');
+  assert(ed.snippets[0][0].includes('${1:Ce qui a changé}') && ed.snippets[0][1].line === 5);
+  // Fin de fichier sans retour à la ligne
+  ed = editableEditor(new Uri('/tmp/other/suivi2.md'), '| Version | Date |\n|--|--|\n| V4 | 01/01/2026 |');
+  vscode.window.activeTextEditor = ed;
+  await commands['dsfrPreview.newVersion']();
+  assert.strictEqual(ed.text, '| Version | Date |\n|--|--|\n| V4 | 01/01/2026 |\n| V5 | ' + today + ' |');
+  // Pas de tableau : proposé sous le titre de la page
+  ed = editableEditor(new Uri('/tmp/other/suivi3.md'), '# Titre\n\nTexte');
+  vscode.window.activeTextEditor = ed;
+  const info = vscode.window.showInformationMessage;
+  vscode.window.showInformationMessage = async (m, ...actions) => { messages.push(m); return actions[0]; };
+  await commands['dsfrPreview.newVersion']();
+  vscode.window.showInformationMessage = info;
+  assert(ed.text.startsWith('# Titre\n\n/// accordion | **Suivi des modifications**\n\n| **Version** |'), ed.text);
+  assert(ed.text.endsWith('///\n\nTexte'), JSON.stringify(ed.text));
+
+  // Collage depuis Word : Markdown proposé (et choisi par défaut dans les pages Markdown)
+  assert.deepStrictEqual(manifest.configurationDefaults['[markdown]']['editor.pasteAs.preferences'], ['markdown.dsfr']);
+  assert.strictEqual(pasteProvider.metadata.providedPasteEditKinds[0].value, 'markdown.dsfr');
+  const transfer = (items) => ({ get: (mime) => (mime in items ? { asString: async () => items[mime] } : undefined) });
+  const pasteDoc = textDocument(new Uri('/tmp/other/coller.md'), 'Intro :\n\nSuite');
+  pasteDoc.lineAt = (i) => ({ text: ['Intro :', '', 'Suite'][i] });
+  const at = [new Range(1, 0, 1, 0)];
+  let edits = await pasteProvider.provider.provideDocumentPasteEdits(pasteDoc, at, transfer({ 'text/html': fs.readFileSync(path.join(__dirname, 'fixtures', 'word-modop.html'), 'utf8') }), { triggerKind: 0 }, {});
+  assert.strictEqual(edits.length, 1);
+  assert.strictEqual(edits[0].title, 'Markdown DSFR (depuis Word)');
+  assert(edits[0].insertText.startsWith('\n## Rechercher l’acte\n') && edits[0].insertText.endsWith('\\# pas un titre\n'), 'lignes vides autour');
+  edits = await pasteProvider.provider.provideDocumentPasteEdits(pasteDoc, at, transfer({ 'text/plain': 'A\tB\n1\t2' }), { triggerKind: 0 }, {});
+  assert.strictEqual(edits[0].title, 'Tableau Markdown (depuis Excel)');
+  assert.strictEqual(await pasteProvider.provider.provideDocumentPasteEdits(pasteDoc, at, transfer({ 'text/plain': 'mot' }), { triggerKind: 0 }, {}), undefined, 'texte simple : collage normal');
+  assert.strictEqual(await pasteProvider.provider.provideDocumentPasteEdits(pasteDoc, at, transfer({ 'text/html': '<b>x</b>', 'vscode-editor-data': '{}' }), { triggerKind: 0 }, {}), undefined, 'copie faite dans VS Code');
+  assert.strictEqual(await pasteProvider.provider.provideDocumentPasteEdits(pasteDoc, at, transfer({ 'text/html': '<span>x</span>' }), { triggerKind: 0 }, {}), undefined, 'HTML sans mise en forme');
+  settings.pasteFromWord = false;
+  assert.strictEqual(await pasteProvider.provider.provideDocumentPasteEdits(pasteDoc, at, transfer({ 'text/html': '<b>x</b>' }), { triggerKind: 0 }, {}), undefined, 'réglage coupé');
+  delete settings.pasteFromWord;
+  // Commande de repli (texte seul)
+  ed = editableEditor(new Uri('/tmp/other/coller2.md'), '');
+  vscode.window.activeTextEditor = ed;
+  clipboardText = 'Premier.\r\n•\tUn\r\n•\tDeux';
+  await commands['dsfrPreview.pastePlainFromWord']();
+  assert.strictEqual(ed.text, 'Premier.\n\n- Un\n- Deux');
+  vscode.window.activeTextEditor = null;
+
   // Correction de tout le dossier : rien sans confirmation, puis correction et enregistrement
   modalAnswer = undefined;
   await commands['dsfrPreview.fixFrontMatterInWorkspace']();
@@ -510,5 +690,5 @@ async function lintVia(document) {
   assert.deepStrictEqual(saved.sort(), ['a.md', 'b.md']);
   fs.rmSync(tmp, { recursive: true, force: true });
 
-  console.log('Extension (VS Code simulé) : rendu, bascule, aperçu à côté, nouvelle fenêtre, blocs, en-têtes et liens soulignés, corrections à la demande, liste des problèmes, panneau des composants, autocomplétion et survol OK');
+  console.log('Extension (VS Code simulé) : rendu, bascule, aperçu à côté, nouvelle fenêtre, blocs, en-têtes et liens soulignés, corrections à la demande, liste des problèmes, panneau des composants, vérification du dossier, mise en forme, nouvelle version, collage depuis Word, autocomplétion et survol OK');
 })().catch((e) => { console.error(e); process.exit(1); });
