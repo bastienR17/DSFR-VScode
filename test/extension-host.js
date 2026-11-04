@@ -9,8 +9,14 @@ const commands = {};
 const workspaceSettings = {};
 const updates = [];
 const calls = [];
+const webviewProviders = {};
 let oldVsCode = false;
-class Uri { constructor(p) { this.fsPath = p; this.scheme = 'file'; } toString() { return 'file://' + this.fsPath; } }
+class Uri {
+  constructor(p) { this.fsPath = p; this.scheme = 'file'; }
+  toString() { return 'file://' + this.fsPath; }
+  static file(p) { return new Uri(p); }
+  static joinPath(u, ...parts) { return new Uri(path.join(u.fsPath, ...parts)); }
+}
 // Éditeurs affichés (colonne → document) et suivi du focus, pour vérifier la disposition côte à côte
 const shown = [];
 let focused = null;
@@ -26,6 +32,9 @@ let diagnosticsListener = null;
 const messages = [];
 let completionProvider = null;
 let hoverProvider = null;
+let foldingProvider = null;
+let activeEditorListener = null;
+const decorationTypes = [];
 let modalAnswer;
 const saved = [];
 class Range {
@@ -88,7 +97,9 @@ const vscode = {
       }
       return true;
     },
-    openTextDocument: async (u) => ({ save: async () => { saved.push(path.basename(u.fsPath)); return true; } }),
+    openTextDocument: async (u) => (u && u.content !== undefined
+      ? Object.assign(textDocument(new Uri('/untitled/Sans titre-1'), u.content), { languageId: u.language, untitled: true })
+      : { save: async () => { saved.push(path.basename(u.fsPath)); return true; } }),
     createFileSystemWatcher: () => ({ onDidCreate: noop, onDidChange: noop, onDidDelete: noop, dispose() {} }),
     onDidChangeWorkspaceFolders: noop,
     onDidChangeConfiguration: (fn) => { configListener = fn; return { dispose() {} }; },
@@ -101,7 +112,11 @@ const vscode = {
       return item;
     },
     showQuickPick: async (items, opts) => { pickItems = items; pickTitle = opts && opts.title; return pickAnswer(items); },
-    onDidChangeActiveTextEditor: noop,
+    onDidChangeActiveTextEditor: (fn) => { activeEditorListener = fn; return { dispose() {} }; },
+    onDidChangeVisibleTextEditors: noop,
+    createTextEditorDecorationType: (opts) => { const t = { opts, dispose() {} }; decorationTypes.push(t); return t; },
+    tabGroups: { all: [] },
+    registerWebviewViewProvider: (id, provider) => { webviewProviders[id] = provider; return { dispose() {} }; },
     showInformationMessage: async (message) => { messages.push(message); return undefined; },
     showWarningMessage: async (message, options) => { messages.push(message); return options && options.modal ? modalAnswer : undefined; },
     showErrorMessage: async () => undefined,
@@ -132,6 +147,7 @@ const vscode = {
     registerCodeActionsProvider: (selector, provider) => { codeActionProvider = provider; return { dispose() {} }; },
     registerCompletionItemProvider: (selector, provider, ...triggers) => { completionProvider = { provider, triggers }; return { dispose() {} }; },
     registerHoverProvider: (selector, provider) => { hoverProvider = provider; return { dispose() {} }; },
+    registerFoldingRangeProvider: (selector, provider) => { foldingProvider = provider; return { dispose() {} }; },
     onDidChangeDiagnostics: (fn) => { diagnosticsListener = fn; return { dispose() {} }; },
   },
   CompletionItem: class { constructor(label, kind) { Object.assign(this, { label, kind }); } },
@@ -140,6 +156,10 @@ const vscode = {
   SnippetString: class { constructor(value) { this.value = value; } },
   MarkdownString: class { constructor(value) { this.value = value; } },
   Hover: class { constructor(contents, range) { Object.assign(this, { contents, range }); } },
+  FoldingRange: class { constructor(start, end) { Object.assign(this, { start, end }); } },
+  ThemeColor: class { constructor(id) { this.id = id; } },
+  QuickPickItemKind: { Separator: -1, Default: 0 },
+  Position: class { constructor(line, character) { Object.assign(this, { line, character }); } },
   Range, Diagnostic, CodeAction, WorkspaceEdit,
   DiagnosticSeverity: { Error: 0, Warning: 1, Information: 2 },
   CodeActionKind: (() => {
@@ -298,17 +318,20 @@ async function lintVia(document) {
   const tipText = '# Page\n\n![](img.png) voir [Autre](https://docsirh.e2.rie.gouv.fr/autre/) et [PDF](https://docsirh.e2.rie.gouv.fr/fichiers/a.pdf)\n';
   fs.writeFileSync(path.join(site, 'docs', 'img.png'), '');
   const tipDoc = textDocument(new Uri(path.join(site, 'docs', 'conseils.md')), tipText);
+  assert.deepStrictEqual((await lintVia(tipDoc)).map((d) => d.code), ['dsfr-absolute-link'], 'images sans description : non signalées par défaut');
+  settings.checkImageAlt = true;
   const tipDiags = await lintVia(tipDoc);
   assert.deepStrictEqual(tipDiags.map((d) => [d.code, d.severity]), [['dsfr-img-alt', 2], ['dsfr-absolute-link', 2]]);
   const tipActions = codeActionProvider.provideCodeActions(tipDoc, tipDiags[1].range, { diagnostics: [tipDiags[1]] });
   assert.deepStrictEqual(tipActions.map((a) => a.edit.entries[0].text), ['autre.md']);
   vscode.window.activeTextEditor = { document: tipDoc };
   statusItems[1].refresh();
-  assert(!statusItems[1].visible, 'les conseils ne sont pas comptés dans la barre d\'état');
+  assert.strictEqual(statusItems[1].text, '$(pass-filled) Page sans erreur', 'les conseils ne sont pas comptés dans la barre d\'état');
+  assert.strictEqual(statusItems[1].color.id, 'testing.iconPassed');
   pickItems = null; pickAnswer = () => undefined; pickTitle = null;
   await commands['dsfrPreview.listProblems']();
   assert.deepStrictEqual(pickItems.map((i) => i.label), ['$(info) Ligne 3', '$(info) Ligne 3']);
-  assert.strictEqual(pickTitle, 'DSFR : 2 conseils dans cette page');
+  assert.strictEqual(pickTitle, '2 conseils dans cette page');
   vscode.window.activeTextEditor = null;
   // Défaut visible sur le site (titre coupé) : avertissement, compté dans la barre d'état
   const cutDoc = textDocument(new Uri(path.join(site, 'docs', 'coupe.md')), '# Page\n\n## Vérifier que la position permet l\'acquisition de\n\ncongé\n');
@@ -316,36 +339,95 @@ async function lintVia(document) {
   assert.deepStrictEqual(cutDiags.map((d) => [d.code, d.severity]), [['dsfr-split-heading', 1]]);
   vscode.window.activeTextEditor = { document: cutDoc };
   statusItems[1].refresh();
-  assert.strictEqual(statusItems[1].text, '$(warning) 1 DSFR');
+  assert.strictEqual(statusItems[1].text, '$(warning) 1 point à vérifier');
+  assert.strictEqual(statusItems[1].backgroundColor.id, 'statusBarItem.warningBackground');
   vscode.window.activeTextEditor = null;
-  settings.checkImageAlt = false;
-  assert.deepStrictEqual((await lintVia(tipDoc)).map((d) => d.code), ['dsfr-absolute-link'], 'réglage checkImageAlt coupé');
   delete settings.checkImageAlt;
   fs.rmSync(site, { recursive: true, force: true });
 
   // Commande « Problèmes de la page » : liste avec les lignes, rien n'est modifié ; compteur dans la barre d'état
   assert(!commands['dsfrPreview.fixPage'], 'plus de correction automatique');
+  assert(!commands['dsfrPreview.welcome'] && !commands['dsfrPreview.newPage'] && !manifest.walkthroughs, 'pas de pas-à-pas d\'accueil ni de page d\'essai');
   const listText = '/// alert | A\n    type: warnig\nTexte\n///\n\n/// alert | B\n    type: rouge\nTexte\n///\n';
   const listDoc = textDocument(new Uri('/tmp/other/liste.md'), listText);
   vscode.window.activeTextEditor = { document: listDoc };
   pickItems = null; pickAnswer = (list) => list[1];
   await commands['dsfrPreview.listProblems']();
   assert.deepStrictEqual(pickItems.map((i) => i.label), ['$(error) Ligne 2', '$(error) Ligne 7']);
-  assert(pickItems[1].detail.startsWith('Valeur « rouge » invalide'), pickItems[1].detail);
+  assert(pickItems[1].detail.startsWith('« rouge » n\'est pas une valeur possible'), pickItems[1].detail);
   assert.deepStrictEqual([lastSelection.line, lastSelection.character], [6, 10], 'curseur placé sur le problème choisi');
   assert.strictEqual(listDoc.getText(), listText);
   statusItems[1].refresh();
-  assert.strictEqual(statusItems[1].text, '$(error) 2 DSFR');
+  assert.strictEqual(statusItems[1].text, '$(error) 2 points à corriger');
+  assert.strictEqual(statusItems[1].backgroundColor.id, 'statusBarItem.errorBackground');
   assert(statusItems[1].visible && statusItems[1].command === 'dsfrPreview.listProblems');
   // Page sans problème : message, compteur masqué
   const okDoc = textDocument(new Uri('/tmp/other/ok.md'), '# Titre\n');
   vscode.window.activeTextEditor = { document: okDoc };
   messages.length = 0;
   await commands['dsfrPreview.listProblems']();
-  assert.strictEqual(messages[0], 'DSFR : aucun problème dans cette page.');
+  assert.strictEqual(messages[0], 'Aucun point à corriger dans cette page.');
   statusItems[1].refresh();
-  assert(!statusItems[1].visible);
+  assert(statusItems[1].visible && statusItems[1].text === '$(pass-filled) Page sans erreur' && !statusItems[1].backgroundColor);
   vscode.window.activeTextEditor = null;
+  statusItems[1].refresh();
+  assert(!statusItems[1].visible, 'pas de page Markdown : rien dans la barre d\'état');
+
+  // « Insérer un composant » : bouton de la barre d'état, liste par familles, insertion au curseur
+  assert.strictEqual(statusItems[2].command, 'dsfrPreview.insertComponent');
+  assert.strictEqual(statusItems[2].text, '$(add) Insérer un composant');
+  const inserted = [];
+  const insDoc = textDocument(new Uri('/tmp/other/insert.md'), '# Titre\n\nTexte\n');
+  vscode.window.activeTextEditor = { document: insDoc, insertSnippet: async (s, at) => { inserted.push([s.value, at]); return true; } };
+  pickAnswer = (list) => list.find((i) => i.item && i.item.prefix === 'dsfr-alerte');
+  await commands['dsfrPreview.insertComponent']();
+  assert(pickItems[0].kind === -1 && pickItems[0].label.startsWith('Doc SIRH'), 'première famille : Doc SIRH');
+  assert(pickItems.some((i) => i.label === '$(warning) Alerte' && i.detail));
+  assert(inserted[0][0].startsWith('/// alert | ') && inserted[0][1] === undefined, 'alerte insérée au curseur');
+  pickAnswer = (list) => list.find((i) => i.item && i.item.prefix === 'dsfr-sommaire');
+  await commands['dsfrPreview.insertComponent']();
+  assert.deepStrictEqual([inserted[1][0], inserted[1][1].line], ['---\nsummary: true\n---\n\n$0', 0], 'sommaire : nouvel en-tête en haut de la page');
+  vscode.window.activeTextEditor = null;
+  messages.length = 0;
+  await commands['dsfrPreview.insertComponent']();
+  assert(messages[0].startsWith('Ouvrez d\'abord une page Markdown'));
+
+  // Panneau « Composants » : vignettes, puis un clic insère dans la dernière page Markdown utilisée
+  assert(manifest.views.dsfr.some((v) => v.id === 'dsfrPreview.components' && v.type === 'webview'));
+  assert(fs.existsSync(path.join(__dirname, '..', manifest.viewsContainers.activitybar[0].icon)));
+  const panel = webviewProviders['dsfrPreview.components'];
+  let onMessage = null;
+  const view = { webview: {
+    cspSource: 'vscode-resource:', options: null, html: '',
+    asWebviewUri: (u) => 'vscode-resource:' + u.fsPath,
+    onDidReceiveMessage: (fn) => { onMessage = fn; return { dispose() {} }; },
+  } };
+  panel.resolveWebviewView(view);
+  assert(view.webview.options.enableScripts && view.webview.options.localResourceRoots[0].fsPath.endsWith(path.join('media', 'thumbnails')));
+  assert(/<img[^>]+src="vscode-resource:[^"]+thumbnails[\\/]dsfr-alerte\.jpg"/.test(view.webview.html), 'vignette de l\'alerte');
+  assert(/Content-Security-Policy[^>]+script-src 'nonce-/.test(view.webview.html));
+  const panelDoc = textDocument(new Uri('/tmp/other/panneau.md'), '# Titre\n');
+  settings.autoOpen = false;
+  activeEditorListener({ document: panelDoc, viewColumn: 1 });
+  activeEditorListener(undefined);
+  delete settings.autoOpen; // clic dans le panneau : plus d'éditeur actif
+  const showDoc = vscode.window.showTextDocument;
+  const panelInserted = [];
+  vscode.window.showTextDocument = async (document, opts) => ({ document, viewColumn: opts.viewColumn, insertSnippet: async (s, at) => { panelInserted.push([document.uri.fsPath, s.value, at, opts.viewColumn]); return true; } });
+  await onMessage({ type: 'insert', prefix: 'dsfr-alerte' });
+  assert.strictEqual(panelInserted.length, 1);
+  assert(panelInserted[0][0] === '/tmp/other/panneau.md' && panelInserted[0][1].startsWith('/// alert | ') && panelInserted[0][3] === 1, 'alerte insérée dans la page');
+  await onMessage({ type: 'insert', prefix: 'dsfr-bandeau' });
+  assert.strictEqual(panelInserted[1][2].line, 0, 'bandeau : nouvel en-tête en haut de la page');
+  await onMessage({ type: 'insert', prefix: 'inconnu' });
+  assert.strictEqual(panelInserted.length, 2);
+  panelDoc.isClosed = true;
+  messages.length = 0;
+  await onMessage({ type: 'insert', prefix: 'dsfr-alerte' });
+  assert(messages[0].startsWith('Ouvrez d\'abord une page Markdown') && panelInserted.length === 2, 'page fermée : message');
+  vscode.window.showTextDocument = showDoc;
+  await commands['dsfrPreview.showComponents']();
+  assert(calls.includes('dsfrPreview.components.focus'));
 
   // Autocomplétion et survol branchés sur l'éditeur
   assert.deepStrictEqual(completionProvider.triggers, ['/', ' ', ':', '-']);
@@ -367,6 +449,55 @@ async function lintVia(document) {
   assert.strictEqual(completionProvider.provider.provideCompletionItems(optDoc, { line: 1, character: 16 }), undefined);
   settings.enabled = true;
 
+  // Mise en page « comme le site » : réglages par défaut, puis textes du mkdocs.yml, puis contenu seul
+  let framed = md.render('# Titre\n', { currentDocument: new Uri('/tmp/other/page.md') });
+  assert(framed.includes('<div class="dsfr-site">') && framed.includes('<p class="fr-header__service-title">Doc SIRH</p>'), framed.slice(0, 400));
+  const themed = fs.mkdtempSync(path.join(os.tmpdir(), 'dsfr-theme-'));
+  fs.mkdirSync(path.join(themed, 'docs'));
+  fs.writeFileSync(path.join(themed, 'mkdocs.yml'), 'theme:\n  name: dsfr\n  header:\n    titre: Mon site\n  afficher_menu_lateral: false\n');
+  framed = md.render('# Titre\n', { currentDocument: new Uri(path.join(themed, 'docs', 'page.md')) });
+  assert(framed.includes('<p class="fr-header__service-title">Mon site</p>') && !framed.includes('fr-sidemenu') && !framed.includes('Éditer dans'), 'textes du mkdocs.yml');
+  fs.rmSync(themed, { recursive: true, force: true });
+  settings.desktopWidth = true;
+  assert(md.render('# T\n', {}).includes('data-desktop="true"'));
+  delete settings.desktopWidth;
+  settings.pageLayout = 'content';
+  assert(!md.render('# T\n', {}).includes('dsfr-site'), 'réglage pageLayout = content');
+  delete settings.pageLayout;
+
+  // Couleurs DSFR des blocs « /// » : appliquées à l'éditeur actif, coupées par le réglage colors
+  assert.strictEqual(decorationTypes.length, 5);
+  assert.deepStrictEqual(decorationTypes[1].opts.light, { color: '#000091' }, 'nom du bloc en bleu France');
+  const decorated = new Map();
+  const colDoc = textDocument(new Uri('/tmp/other/couleurs.md'), '/// alert | Titre\n    type: info\nX\n///\n');
+  const colEditor = { document: colDoc, setDecorations: (type, ranges) => decorated.set(decorationTypes.indexOf(type), ranges) };
+  settings.autoOpen = false;
+  activeEditorListener(colEditor);
+  assert.deepStrictEqual(decorated.get(1).map((r) => [r.sl, r.sc, r.ec]), [[0, 4, 9]], 'nom « alert » coloré');
+  assert.strictEqual(decorated.get(4).length, 2, 'fond sur les lignes d\'ouverture et de fermeture');
+  settings.colors = false;
+  activeEditorListener(colEditor);
+  assert.strictEqual(decorated.get(1).length, 0, 'réglage colors coupé');
+  delete settings.colors;
+  // Ouverture automatique de l'aperçu : une seule fois, à la première page Markdown
+  delete settings.autoOpen;
+  calls.length = 0;
+  activeEditorListener(colEditor);
+  await new Promise((r) => setTimeout(r, 10));
+  assert(calls.includes('markdown.showPreviewToSide'), 'aperçu ouvert automatiquement : ' + calls.join(', '));
+  calls.length = 0;
+  activeEditorListener(colEditor);
+  await new Promise((r) => setTimeout(r, 10));
+  assert(!calls.includes('markdown.showPreviewToSide'), 'une seule fois par fenêtre');
+  vscode.window.activeTextEditor = null;
+
+  // Repli des blocs « /// »
+  const foldDoc = textDocument(new Uri('/tmp/other/repli.md'), '/// tabs\n/// tab | Un\nA\n///\n///\n');
+  assert.deepStrictEqual(foldingProvider.provideFoldingRanges(foldDoc).map((r) => [r.start, r.end]), [[0, 4], [1, 3]]);
+  settings.enabled = false;
+  assert.deepStrictEqual(foldingProvider.provideFoldingRanges(foldDoc), []);
+  settings.enabled = true;
+
   // Correction de tout le dossier : rien sans confirmation, puis correction et enregistrement
   modalAnswer = undefined;
   await commands['dsfrPreview.fixFrontMatterInWorkspace']();
@@ -379,5 +510,5 @@ async function lintVia(document) {
   assert.deepStrictEqual(saved.sort(), ['a.md', 'b.md']);
   fs.rmSync(tmp, { recursive: true, force: true });
 
-  console.log('Extension (VS Code simulé) : rendu, bascule, aperçu à côté, nouvelle fenêtre, blocs, en-têtes et liens soulignés, corrections à la demande, liste des problèmes, autocomplétion et survol OK');
+  console.log('Extension (VS Code simulé) : rendu, bascule, aperçu à côté, nouvelle fenêtre, blocs, en-têtes et liens soulignés, corrections à la demande, liste des problèmes, panneau des composants, autocomplétion et survol OK');
 })().catch((e) => { console.error(e); process.exit(1); });

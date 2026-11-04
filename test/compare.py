@@ -8,9 +8,15 @@ from dsfr_structure.extension import accordion, callout, notice, quote, card, ti
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
+try:  # dsfr_structure 0.13 et plus : tags
+    from dsfr_structure.extension import tag as tag_ext
+    TAG_CLASSES = [tag_ext.DsfrTags, tag_ext.DsfrTag]
+except ImportError:
+    TAG_CLASSES = []
+
 def reset():
     for cls in [accordion.DsfrAccordion, callout.DsfrCallout, notice.DsfrNotice, quote.DsfrQuote, card.DsfrCard,
-                tile.DsfrTile, media.DsfrMedia, tab.DsfrTabs, tab.DsfrTab, button.DsfrButtons, button.DsfrButton]:
+                tile.DsfrTile, media.DsfrMedia, tab.DsfrTabs, tab.DsfrTab, button.DsfrButtons, button.DsfrButton] + TAG_CLASSES:
         cls.count = 0
 
 def py_render(src):

@@ -1,0 +1,121 @@
+{
+  "information_for_contributors": "Coloration des blocs DSFR « /// nom | titre » dans l'éditeur Markdown de VS Code (grammaire injectée dans text.html.markdown). Testée par test/grammar.js.",
+  "scopeName": "markdown.dsfr.blocks",
+  "injectionSelector": "L:text.html.markdown -markup.fenced_code -markup.raw -markup.inline.raw -meta.embedded -comment",
+  "patterns": [
+    {
+      "include": "#block-header"
+    },
+    {
+      "include": "#block-close"
+    }
+  ],
+  "repository": {
+    "block-header": {
+      "name": "meta.block.header.dsfr",
+      "begin": "(^|\\G)([ ]{0,3})(/{3,})[ \\t]*([A-Za-z][\\w-]*)(?:[ \\t]*(\\|)[ \\t]*(.*?))?[ \\t]*$",
+      "beginCaptures": {
+        "3": {
+          "name": "punctuation.definition.tag.begin.dsfr"
+        },
+        "4": {
+          "name": "entity.name.tag.dsfr"
+        },
+        "5": {
+          "name": "punctuation.separator.dsfr"
+        },
+        "6": {
+          "name": "string.unquoted.title.dsfr"
+        }
+      },
+      "while": "(^|\\G)(?=[ ]{4,}[A-Za-z_][\\w-]*[ \\t]*:)",
+      "patterns": [
+        {
+          "include": "#option"
+        }
+      ]
+    },
+    "option": {
+      "patterns": [
+        {
+          "match": "^([ ]{4,})([A-Za-z_][\\w-]*)[ \\t]*(:)[ \\t]*((?:true|false|True|False|yes|no|on|off))[ \\t]*$",
+          "captures": {
+            "2": {
+              "name": "support.type.property-name.dsfr"
+            },
+            "3": {
+              "name": "punctuation.separator.key-value.dsfr"
+            },
+            "4": {
+              "name": "constant.language.boolean.dsfr"
+            }
+          }
+        },
+        {
+          "match": "^([ ]{4,})([A-Za-z_][\\w-]*)[ \\t]*(:)[ \\t]*(-?\\d+(?:\\.\\d+)?)[ \\t]*$",
+          "captures": {
+            "2": {
+              "name": "support.type.property-name.dsfr"
+            },
+            "3": {
+              "name": "punctuation.separator.key-value.dsfr"
+            },
+            "4": {
+              "name": "constant.numeric.dsfr"
+            }
+          }
+        },
+        {
+          "match": "^([ ]{4,})([A-Za-z_][\\w-]*)[ \\t]*(:)[ \\t]*((['\"]).*\\5)[ \\t]*$",
+          "captures": {
+            "2": {
+              "name": "support.type.property-name.dsfr"
+            },
+            "3": {
+              "name": "punctuation.separator.key-value.dsfr"
+            },
+            "4": {
+              "name": "string.quoted.dsfr"
+            }
+          }
+        },
+        {
+          "match": "^([ ]{4,})([A-Za-z_][\\w-]*)[ \\t]*(:)[ \\t]*(\\{.*\\})[ \\t]*$",
+          "captures": {
+            "2": {
+              "name": "support.type.property-name.dsfr"
+            },
+            "3": {
+              "name": "punctuation.separator.key-value.dsfr"
+            },
+            "4": {
+              "name": "meta.structure.dictionary.dsfr"
+            }
+          }
+        },
+        {
+          "match": "^([ ]{4,})([A-Za-z_][\\w-]*)[ \\t]*(:)[ \\t]*(.*?)[ \\t]*$",
+          "captures": {
+            "2": {
+              "name": "support.type.property-name.dsfr"
+            },
+            "3": {
+              "name": "punctuation.separator.key-value.dsfr"
+            },
+            "4": {
+              "name": "string.unquoted.value.dsfr"
+            }
+          }
+        }
+      ]
+    },
+    "block-close": {
+      "match": "(^|\\G)[ ]{0,3}(/{3,})[ \\t]*$",
+      "captures": {
+        "2": {
+          "name": "punctuation.definition.tag.end.dsfr"
+        }
+      }
+    }
+  }
+}

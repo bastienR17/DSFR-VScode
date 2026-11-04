@@ -2,6 +2,85 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## 0.12.0 — octobre 2026
+
+### Ajouts
+- **Boîte à composants** : une icône **DSFR** dans la barre de gauche de VS Code ouvre le panneau « Composants ».
+  Chaque composant y est montré avec une **miniature** de son rendu, son nom et une phrase d'explication, rangé
+  par familles de couleur (Doc SIRH, messages, cartes et tuiles, contenus repliables, boutons, images et
+  tableaux, en-tête de page). Une recherche filtre la liste (« alerte », « carte », « capture »…, accents
+  facultatifs). **Un clic insère le composant** dans la page, à l'endroit du curseur ; les blocs de l'en-tête de
+  page se placent tout seuls en haut. Le panneau suit les couleurs du thème de VS Code, clair ou sombre.
+- Commande **DSFR : Afficher la boîte à composants**.
+
+## 0.11.2 — octobre 2026
+
+### Modifications
+- Les images sans description ne sont plus signalées par défaut (réglage `dsfrPreview.checkImageAlt` pour les réactiver).
+
+## 0.11.1 — octobre 2026
+
+Version pensée pour les rédacteurs qui n'ont pas l'habitude de VS Code.
+
+### Ajouts
+- **＋ Insérer un composant** (bas de l'écran, clic droit ou palette) : les composants rangés par familles
+  (Doc SIRH, messages, cartes et tuiles, contenus repliables, boutons, images et tableaux, en-tête de page),
+  avec une icône et une phrase d'explication. Les blocs de l'en-tête de page se placent tout seuls en haut.
+- **Couleurs DSFR dans l'éditeur**, quel que soit le thème : `///` en rouge Marianne, nom du bloc en bleu France,
+  titre en vert, options en violet, léger fond bleu sur les lignes d'ouverture et de fermeture (réglage `dsfrPreview.colors`).
+- **L'aperçu s'ouvre tout seul** à la première page Markdown ouverte (réglage `dsfrPreview.autoOpen`).
+- Les longues lignes passent à la ligne dans les fichiers Markdown.
+
+### Modifications
+- **Messages en français simple** : ce qui ne va pas, puis quoi faire (« il manque la ligne `///` qui marque sa
+  fin… l'ampoule 💡 peut le faire »), sans jargon technique. Encadrés de l'aperçu : « À corriger »,
+  « Composant mal écrit », « Différent sur le site ».
+- **Bas de l'écran en couleur** : « ✓ Page sans erreur » en vert, « N points à vérifier » sur fond orange,
+  « N points à corriger » sur fond rouge ; un clic les liste avec leur ligne.
+
+## 0.10.1 — octobre 2026
+
+### Corrections
+- **Titre sans espace après les `#`** (`###Rechercher l'acte à modifier`) : le site l'affiche comme un titre,
+  l'aperçu le laissait en texte. L'aperçu fait maintenant comme le site, et l'éditeur le signale avec une
+  correction en un clic (`### Rechercher…`) : sans l'espace, il reste en texte dans le wiki GitLab.
+
+## 0.10.0 — octobre 2026
+
+### Ajouts
+- **L'aperçu montre la page comme sur le site** : en-tête (bloc-marque, titre et sous-titre du site),
+  bandeau, **menu latéral** avec le sommaire de la page (cliquable), colonne de contenu et pied de page,
+  d'après les gabarits du thème mkdocs-dsfr 0.27. Les textes de l'en-tête, du menu et du pied de page sont lus
+  dans le `mkdocs.yml` du site ; sans lui, ce sont ceux de **Doc SIRH** (bloc-marque des ministères, titre et
+  sous-titre, liens de l'en-tête, barre de recherche, rubriques du menu avec celle de la page mise en évidence,
+  pied de page). Bloc-marque, titre et sous-titre se changent dans `dsfrPreview.siteBrand`, `siteTitle`, `siteTagline`.
+  Le réglage `dsfrPreview.pageLayout` = `content` revient à l'affichage du contenu seul.
+- Réglage `dsfrPreview.desktopWidth` : la page s'affiche à la largeur d'un ordinateur (1280 px), réduite pour
+  tenir dans l'aperçu ; les cartes, tuiles et colonnes passent à la ligne comme sur le site.
+- **Couleurs dans l'éditeur** : les en-têtes `/// nom | titre`, les options (clé et valeur) et les fermetures
+  `///` sont colorés selon le thème de VS Code. Rien n'est coloré dans les blocs de code.
+- **Repli des blocs** : une flèche dans la marge replie un bloc `///` (onglets, accordéon, grille…) jusqu'à sa fermeture.
+
+### Modifications
+- Ligne de cartes non fermée avant la suivante : le `///` ajouté par l'ampoule se place juste après la dernière
+  fermeture du bloc, avant la ligne vide (cas réel de la page Estève).
+
+## 0.9.9 — octobre 2026
+
+L'aperçu suit maintenant les dernières versions du thème, celles qu'utilise le site Doc SIRH
+(mis à jour automatiquement) : **mkdocs-dsfr 0.27.0, `dsfr_structure` 0.13.0, DSFR 1.15.4**.
+
+### Ajouts
+- **Tags** : nouveaux blocs `/// tag | Libellé` (étiquette, ou lien avec `target`) et `/// tags` (groupe de
+  tags côte à côte), avec leurs options (`size`, `icon`, `color`, `target`, `target_new`), l'autocomplétion,
+  l'aide au survol et les snippets `dsfr-tag` et `dsfr-tags`. Rendu identique au site sur tous les tests
+  officiels de `dsfr_structure`.
+- Comme le thème 0.27 : un lien vers une ancre (`#titre`) placée dans un accordéon fermé ouvre l'accordéon.
+
+### Modifications
+- Styles, polices Marianne et icônes du DSFR 1.15.4 (au lieu de 1.15.2).
+- Bouton ou tag avec du texte sous l'en-tête : le titre et le texte sont séparés par une espace, comme sur le site.
+
 ## 0.9.8 — octobre 2026
 
 Version issue de la comparaison de 11 vraies pages Doc SIRH (modes opératoires et pages de rubrique)

@@ -8,15 +8,15 @@ function render(src, enabled = true) {
   return md.render(src, {});
 }
 const cases = [
-  ["/// alert | T\n    foo: bar\nX\n///\n", 'Option inconnue « foo »'],
-  ["/// alert | T\n    type: rouge\nX\n///\n", 'Valeur « rouge » invalide pour « type »'],
-  ["/// badge | arg\nX\n///\n", 'n\'accepte pas de titre'],
+  ["/// alert | T\n    foo: bar\nX\n///\n", 'est pas une option de « /// alert »'],
+  ["/// alert | T\n    type: rouge\nX\n///\n", 'est pas une valeur possible pour « type » : valeurs possibles : success, error, info, warning'],
+  ["/// badge | arg\nX\n///\n", 'retirez le texte écrit après « | »'],
   ["/// accordion\nX\n///\n", 'doit avoir un titre'],
-  ["/// accordion | A\n    open: 'true'\nX\n///\n", 'true ou false'],
-  ["/// alert | Non fermé\nX\n", 'jamais fermé'],
+  ["/// accordion | A\n    open: 'true'\nX\n///\n", 'true (oui) ou false (non)'],
+  ["/// alert | Non fermé\nX\n", 'est pas fermé : il manque la ligne « /// » qui marque sa fin'],
   ["/// tile | T\n    picto: inconnu/nope\nX\n///\n", 'Pictogramme « inconnu/nope » introuvable'],
   ["/// alert | T\n    type success\nX\n///\n", 'Options illisibles'],
-  ["- a\n  - sous a\n- b\n", 'cette sous-liste n\'est pas imbriquée'],
+  ["- a\n  - sous a\n- b\n", 'ne sont pas assez en retrait'],
   ["- La date\n\n  Ceci pour éviter\n- Le code\n", 'ce texte sortira de la liste'],
 ];
 for (const [src, expected] of cases) {

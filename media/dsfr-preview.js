@@ -175,7 +175,21 @@
   }
 
   /* --- Synchronisation après chaque (ré)insertion du contenu ------------- */
+  /* --- Largeur d'un écran d'ordinateur (réglage dsfrPreview.desktopWidth) ---------------
+   * La page est mise en forme sur 1280 px, puis réduite (zoom) pour tenir dans la largeur de l'aperçu :
+   * les cartes, tuiles et colonnes passent à la ligne comme sur un ordinateur.
+   */
+  var DESKTOP_WIDTH = 1280;
+  function applyDesktopWidth() {
+    var frame = document.querySelector('.dsfr-site[data-desktop="true"]');
+    if (!frame) return;
+    var scale = Math.min(1, document.documentElement.clientWidth / DESKTOP_WIDTH);
+    frame.style.zoom = String(Math.round(scale * 1000) / 1000);
+  }
+  window.addEventListener('resize', applyDesktopWidth);
+
   function sync() {
+    applyDesktopWidth();
     var state = applyState();
     if (state !== true) return;
     var page = currentPage();
@@ -212,6 +226,20 @@
     });
   }
 
+  // Ouvre l'accordéon fermé qui contient l'élément d'identifiant `id` (s'il y en a un).
+  function openAccordionAround(id) {
+    if (!id) return;
+    var el = null;
+    try { el = document.getElementById(decodeURIComponent(id)); } catch (e) { return; }
+    openAccordionOf(el);
+  }
+  function openAccordionOf(el) {
+    var accordion = el && el.closest ? el.closest('.fr-accordion') : null;
+    if (!accordion) return;
+    var button = accordion.querySelector('.fr-accordion__btn');
+    if (button && button.getAttribute('aria-expanded') !== 'true') button.click();
+  }
+
   /* --- Clics et clavier -------------------------------------------------- */
   // Écoute en phase de capture : VS Code intercepte les clics sur les liens de l'aperçu.
   document.addEventListener('click', function (event) {
@@ -219,15 +247,26 @@
     var target = event.target;
     if (!target || !target.closest) return;
 
-    // Sommaire : défilement vers le titre correspondant de l'aperçu
-    var go = target.closest('[data-dsfr-goto]');
+    // Sommaire et menu latéral : défilement vers le titre correspondant de l'aperçu
+    var go = target.closest('[data-dsfr-goto], [data-dsfr-toc-goto]');
     if (go) {
       event.preventDefault();
       event.stopPropagation();
-      var heading = document.querySelector('[data-dsfr-heading="' + go.getAttribute('data-dsfr-goto') + '"]');
-      if (heading) heading.scrollIntoView({ block: 'start' });
+      var heading = go.hasAttribute('data-dsfr-goto')
+        ? document.querySelector('[data-dsfr-heading="' + go.getAttribute('data-dsfr-goto') + '"]')
+        : document.querySelector('[data-dsfr-toc="' + go.getAttribute('data-dsfr-toc-goto') + '"]');
+      if (heading) {
+        // Titre dans un accordéon fermé (titre d'alerte ou d'accordéon compris) : on l'ouvre d'abord
+        openAccordionOf(heading);
+        heading.scrollIntoView({ block: 'start' });
+      }
       return;
     }
+
+    // Lien vers une ancre de la page placée dans un accordéon fermé : l'accordéon s'ouvre d'abord,
+    // comme sur le site (thème mkdocs-dsfr 0.27) ; VS Code fait ensuite défiler jusqu'à l'ancre.
+    var anchor = target.closest('a[href^="#"]');
+    if (anchor) openAccordionAround(anchor.getAttribute('href').slice(1));
 
     var btn = target.closest(COLLAPSE_BTN);
     if (btn && collapseTarget(btn)) {

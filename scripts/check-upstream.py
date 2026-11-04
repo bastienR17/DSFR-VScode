@@ -16,9 +16,9 @@ import urllib.request
 
 # Versions reproduites par l'aperçu : à mettre à jour avec README (Limites connues) et requirements-dev.txt
 REFERENCES = [
-    ('mkdocs-dsfr', 'pypi', 'mkdocs-dsfr', '0.26.1'),
-    ('dsfr_structure', 'pypi', 'dsfr-structure', '0.12.0'),
-    ('DSFR', 'npm', '@gouvfr/dsfr', '1.15.2'),
+    ('mkdocs-dsfr', 'pypi', 'mkdocs-dsfr', '0.27.0'),
+    ('dsfr_structure', 'pypi', 'dsfr-structure', '0.13.0'),
+    ('DSFR', 'npm', '@gouvfr/dsfr', '1.15.4'),
 ]
 
 

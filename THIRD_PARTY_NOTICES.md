@@ -4,7 +4,7 @@ Ce dépôt inclut des fichiers provenant d'autres projets. Ils restent soumis à
 
 ## Système de Design de l'État (DSFR) — `media/dsfr/`
 
-Feuilles de style, polices Marianne et Spectral, icônes et pictogrammes du DSFR 1.15.2,
+Feuilles de style, polices Marianne et Spectral, icônes et pictogrammes du DSFR 1.15.4,
 tels que distribués par le thème mkdocs-dsfr.
 
 - Licence du code : [Licence Ouverte / Etalab 2.0](media/dsfr/LICENSE-DSFR.md).
@@ -17,7 +17,7 @@ avec le thème MkDocs DSFR, et **n'est pas publiée sur le Marketplace public de
 
 ## Thème MkDocs DSFR — `media/dsfr/css/theme.css`
 
-Feuille de style du thème [mkdocs-dsfr](https://pypi.org/project/mkdocs-dsfr/) 0.26.1,
+Feuille de style du thème [mkdocs-dsfr](https://pypi.org/project/mkdocs-dsfr/) 0.27.0,
 licence MIT ([texte](media/dsfr/LICENSE-mkdocs-dsfr.txt)).
 La syntaxe des blocs reproduit celle du paquet [dsfr_structure](https://pypi.org/project/dsfr_structure/).
 

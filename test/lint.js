@@ -122,8 +122,13 @@ clean('```\n///\n/// alrt\n```\n');
 src = '/// row\n/// col\nA\n///\n/// row\n/// col\nB\n///\n///\n';
 issue = only(src);
 assert.strictEqual(issue.code, 'dsfr-unclosed');
-assert(issue.message.includes('le « /// row » de la ligne 5 se retrouve imbriqué dedans'), issue.message);
+assert(issue.message.includes('il manque une ligne « /// » avant la ligne 5, où commence le « /// row » suivant'), issue.message);
 assert.deepStrictEqual(issue.fixes.map((f) => f.title), ['Fermer le bloc par « /// » juste avant la ligne 5']);
+clean(fixed(src, issue));
+// Cas réel (page Estève) : ligne vide entre les deux lignes de cartes ; « /// » ajouté après la dernière fermeture
+src = '/// row\n/// col\nA\n/// \n\n/// row\n/// col\nB\n///\n///\n';
+issue = only(src);
+assert.strictEqual(fixed(src, issue), '/// row\n/// col\nA\n/// \n///\n\n/// row\n/// col\nB\n///\n///\n');
 clean(fixed(src, issue));
 // Même nom plus profond (dans une colonne) : imbrication normale, pas de cette indication
 issue = only('/// row\n/// col\n/// row\n/// col\nB\n///\n///\n///\n');
@@ -198,6 +203,22 @@ clean('Un ** espace ** autour : non signalé.\n');
 // Gras appariés dans l'ordre (cas réel Doc SIRH) : pas de faux signalement
 clean('**G**estion de l’**A**rchivage et du stockage **U**nifiés du\n**D**ossier **I**ndividuel agent\n');
 clean('Du `**code **x` en ligne : ignoré.\n');
+
+// Titre sans espace après les « # » (cas réel) : titre sur le site, espace proposé
+src = 'Intro\n\n###Rechercher l’acte à modifier\n\nTexte\n';
+issue = only(src);
+assert.strictEqual(issue.code, 'dsfr-heading-space');
+assert.strictEqual(issue.severity, 'warning');
+assert.strictEqual(word(src, issue), '###Rechercher l’acte à modifier');
+assert(issue.message.includes('« ### Titre »'), issue.message);
+assert.strictEqual(issue.fixes[0].title, 'Ajouter un espace après « ### »');
+assert.strictEqual(fixed(src, issue), 'Intro\n\n### Rechercher l’acte à modifier\n\nTexte\n');
+clean(fixed(src, issue));
+assert.strictEqual(only('#######Sept\n').fixes.length, 0, '7 « # » : pas de correction évidente');
+clean('```\n#!/bin/bash\n```\n');
+clean('    ###code indenté\n');
+clean('---\n# commentaire YAML\ntitle: x\n---\n\n# Titre\n');
+assert.deepStrictEqual(createLinter({ mkdocsCompat: () => false })('###Titre\n'), [], 'réglage mkdocsCompat coupé');
 
 // Fins de ligne Windows
 src = '/// alert | Titre\r\n    type: warnig\r\nTexte\r\n///\r\n';

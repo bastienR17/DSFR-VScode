@@ -39,7 +39,7 @@ const html = render(page);
 assert(html.indexOf('fr-notice--warning') < html.indexOf('fr-breadcrumb'), 'bandeau avant le fil d\'Ariane');
 assert(html.includes('<span class="fr-notice__desc">Voici l\'exemple : un bandeau d\'information importante</span>'), html);
 assert(html.includes('target="_blank" rel="noopener external" class="fr-notice__link">Lien si besoin</a>'), html);
-assert(html.includes('le titre (title) du bandeau n\'apparaît pas sur le site'), 'avertissement sur le titre du bandeau');
+assert(html.includes('Le titre du bandeau (title) n\'apparaît pas sur le site'), 'avertissement sur le titre du bandeau');
 assert(html.includes('href="/composants/">Composants DSFR : détails</a>'), html);
 assert(html.includes('aria-current="page">Fil d&#39;Ariane</a>') || html.includes('aria-current="page">Fil d\'Ariane</a>'), html);
 assert(/fr-summary[\s\S]*Partie 1[\s\S]*Sous-partie 1\.1[\s\S]*Partie 2/.test(html), 'sommaire h2/h3');
@@ -51,7 +51,7 @@ assert(!html.includes('<hr>'), 'en-tête masqué');
 
 // Erreurs fréquentes
 const bad = render('---\nbreadcrumb:\n  - Composants DSFR : détails: /composants/\n  - Page\n---\n\n# T\n');
-assert(bad.includes('En-tête YAML illisible'), bad);
+assert(bad.includes('En-tête de la page illisible'), bad);
 const noLink = render('---\nbreadcrumb:\n  - Accueil\n  - Page\n---\n\n# T\n');
 assert(noLink.includes('la génération de la page échouera'), noLink);
 const lastLink = render('---\nbreadcrumb:\n  - Accueil: /\n  - Page: /page/\n---\n\n# T\n');
