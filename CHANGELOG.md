@@ -2,6 +2,13 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## 0.14.2 — novembre 2026
+
+### Modifications
+- **Mises à jour vues plus tôt** : la vérification a lieu à chaque ouverture de VS Code (au lieu d'une fois par
+  jour, même après un redémarrage), puis toutes les 4 heures tant que VS Code reste ouvert. Une version déjà
+  proposée n'est pas reproposée avant la prochaine ouverture ; « Ignorer cette version » reste retenu.
+
 ## 0.14.1 — novembre 2026
 
 ### Corrections

@@ -1066,9 +1066,11 @@ function httpsGet(url, { file, json, redirects = 5, timeout = 15000 } = {}) {
 
 /**
  * Regarde la dernière Release du dépôt ; si son .vsix est plus récent, propose de l'installer.
- * Automatique (au plus une fois par jour, silencieux en cas d'erreur réseau) ou demandé par la commande
+ * Automatique (à l'ouverture de VS Code puis toutes les 4 heures, silencieux en cas d'erreur réseau ; une
+ * version déjà proposée n'est pas reproposée avant la prochaine ouverture) ou demandé par la commande
  * « Rechercher une mise à jour » (toujours, avec un message dans tous les cas).
  */
+const proposedThisSession = new Set();
 async function checkForUpdate(context, manual) {
   const now = Date.now();
   if (!manual && !update.shouldCheck(context.globalState.get('dsfr.update.lastCheck'), now)) return;
@@ -1087,6 +1089,8 @@ async function checkForUpdate(context, manual) {
     return;
   }
   if (!manual && context.globalState.get('dsfr.update.skip') === info.version) return;
+  if (!manual && proposedThisSession.has(info.version)) return; // message déjà fermé : pas toutes les 4 heures
+  proposedThisSession.add(info.version);
   const INSTALL = 'Mettre à jour';
   const NEWS = 'Voir les nouveautés';
   const SKIP = 'Ignorer cette version';
@@ -1201,10 +1205,13 @@ function activate(context) {
   maybeAutoOpen(vscode.window.activeTextEditor);
   updateStatus();
   lintOpenDocuments();
-  // Mise à jour depuis GitHub : quelques secondes après l'ouverture, sans ralentir le démarrage
-  if (config().checkUpdates && context.extensionMode !== vscode.ExtensionMode.Development && context.extensionMode !== vscode.ExtensionMode.Test) {
-    const timer = setTimeout(() => checkForUpdate(context, false).catch(() => {}), 8000);
-    context.subscriptions.push({ dispose: () => clearTimeout(timer) });
+  // Mise à jour depuis GitHub : quelques secondes après l'ouverture (sans ralentir le démarrage), puis toutes
+  // les 4 heures tant que VS Code reste ouvert
+  if (context.extensionMode !== vscode.ExtensionMode.Development && context.extensionMode !== vscode.ExtensionMode.Test) {
+    const auto = () => { if (config().checkUpdates) checkForUpdate(context, false).catch(() => {}); };
+    const timer = setTimeout(auto, 8000);
+    const every = setInterval(auto, update.PERIOD);
+    context.subscriptions.push({ dispose: () => { clearTimeout(timer); clearInterval(every); } });
   }
 
   // API lue par l'extension Markdown de VS Code. Les options sont des fonctions :

@@ -19,11 +19,12 @@ assert.strictEqual(releaseInfo({ ...release, assets: [{ name: 'dsfr-markdown-pre
 assert.strictEqual(releaseInfo({ ...release, assets: [] }), null, 'sans .vsix');
 assert.strictEqual(releaseInfo(null), null);
 
-// Au plus une vérification par jour
+// À chaque ouverture de VS Code, sauf si une vérification vient d'avoir lieu (plusieurs fenêtres ouvertes ensemble)
 const now = Date.UTC(2026, 10, 5, 9);
-assert(shouldCheck(undefined, now) && shouldCheck(now - 21 * 3600e3, now) && !shouldCheck(now - 3600e3, now) && shouldCheck(now + 3600e3, now));
+assert(shouldCheck(undefined, now) && shouldCheck(now - 2 * 60e3, now) && !shouldCheck(now - 20e3, now) && shouldCheck(now + 3600e3, now));
+assert.strictEqual(require('../lib/update').PERIOD, 4 * 3600e3, 'toutes les 4 heures tant que VS Code reste ouvert');
 
 // Téléchargements : GitHub et ses serveurs de fichiers seulement
 assert(allowedHost(LATEST_URL) && allowedHost('https://objects.githubusercontent.com/a') && allowedHost('https://release-assets.githubusercontent.com/b'));
 assert(!allowedHost('http://github.com/a') && !allowedHost('https://github.com.evil.fr/a') && !allowedHost('https://evilgithub.com/a'));
-console.log('Mise à jour depuis GitHub : numéros, Release retenue, fréquence et adresses autorisées OK');
+console.log('Mise à jour depuis GitHub : numéros, Release retenue, à chaque ouverture puis toutes les 4 heures, adresses autorisées OK');

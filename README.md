@@ -82,8 +82,8 @@ Extension créée par **Bastien** ([@bastienR17](https://github.com/bastienR17))
    (ou en ligne de commande : `code --install-extension dsfr-markdown-preview-<version>.vsix`).
 3. Recharger la fenêtre : **Ctrl+Maj+P** → **Developer: Reload Window**.
 
-**Mises à jour automatiques** (à partir de la 0.14.0) : à l'ouverture de VS Code, au plus une fois par jour,
-l'extension regarde la dernière Release sur GitHub. Si elle est plus récente, un message propose
+**Mises à jour automatiques** (à partir de la 0.14.0) : à chaque ouverture de VS Code, puis toutes les 4 heures
+tant qu'il reste ouvert (0.14.2), l'extension regarde la dernière Release sur GitHub. Si elle est plus récente, un message propose
 **Mettre à jour** : le `.vsix` est téléchargé et installé, puis VS Code propose de se recharger. Rien n'est
 installé sans ce clic. Commande **DSFR : Rechercher une mise à jour de l'extension** pour vérifier tout de suite ;
 réglage `dsfrPreview.checkUpdates` pour couper la vérification. Les postes doivent pouvoir joindre GitHub
@@ -297,7 +297,7 @@ le mieux est de corriger aussi ce script pour qu'il mette les valeurs entre guil
 | `dsfrPreview.siteBrand`, `siteTitle`, `siteTagline` | texte | ceux de Doc SIRH | Bloc-marque, titre et sous-titre de l'en-tête, si le `mkdocs.yml` du site n'est pas trouvé |
 | `dsfrPreview.formatBar` | `true`, `false` | `true` | Barre de mise en forme en haut des pages Markdown |
 | `dsfrPreview.pasteFromWord` | `true`, `false` | `true` | Transformer en Markdown ce qui est collé depuis Word, Excel, Google Docs ou une page web |
-| `dsfrPreview.checkUpdates` | `true`, `false` | `true` | Chercher une nouvelle version sur GitHub (une fois par jour) et proposer de l'installer |
+| `dsfrPreview.checkUpdates` | `true`, `false` | `true` | Chercher une nouvelle version sur GitHub (à chaque ouverture de VS Code, puis toutes les 4 heures) et proposer de l'installer |
 | `dsfrPreview.devMode` | `true`, `false` | `false` | Mode développeur : « Vérifier toutes les pages du dossier » dans la palette des commandes |
 
 **Mode développeur.** **Ctrl+Alt+Maj+V** (**Cmd+Alt+Maj+V** sur Mac) vérifie toutes les pages du dossier ouvert

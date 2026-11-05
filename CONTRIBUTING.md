@@ -111,7 +111,7 @@ npm run test:browser   # script de l'aperçu dans Chromium
 | `test/component-menu.js` | « Insérer un composant » : chaque snippet rangé dans une famille, libellés, clés d'en-tête placées dans l'en-tête. |
 | `test/html-to-markdown.js` | Collage : pages Word (HTML brut et réécrit par un navigateur), Google Docs et Excel (`test/fixtures/`), listes de Word, cellules fusionnées, simple texte, lignes vides autour du collage ; le Markdown obtenu est aussi comparé au site dans `test/cases.json`. |
 | `test/version-row.js` | Nouvelle version : numéro suivant, date, émetteur, tableau rangé dans un sens ou dans l'autre. |
-| `test/update.js` | Mise à jour : numéros, Release retenue (brouillon, préversion, .vsix hors de GitHub écartés), une fois par jour, adresses autorisées. |
+| `test/update.js` | Mise à jour : numéros, Release retenue (brouillon, préversion, .vsix hors de GitHub écartés), à chaque ouverture puis toutes les 4 heures, adresses autorisées. |
 | `test/format.js` | Mise en forme : gras et italique (ajout, retrait, plusieurs lignes), titres, listes, liens. |
 | `test/component-panel.js` | Boîte à composants : une carte et une vignette par snippet, une couleur par famille, politique de sécurité (CSP) et jeton du script. |
 | `test/decorations.js` | Couleurs des blocs `///` : positions de « /// », du nom, du titre et des options ; code et en-tête ignorés. |
@@ -158,11 +158,12 @@ nouvelle version est sortie (avertissement jaune, sans faire échouer les tests)
    `npm install --no-save playwright && npx playwright install chromium`) ; `test/component-panel.js` échoue s'il en manque une.
 3. Créer et pousser une étiquette (`v` suivi du numéro, sans point après le `v`) :
    ```bash
-   git tag v0.14.1
-   git push origin v0.14.1
+   git tag v0.14.2
+   git push origin v0.14.2
    ```
 4. La CI teste, construit le `.vsix` et le joint à une Release GitHub.
-5. Les postes qui ont l'extension (0.14.0 ou plus) le voient le lendemain au plus tard : un message propose
+5. Les postes qui ont l'extension le voient à la prochaine ouverture de VS Code, ou dans les 4 heures s'il reste
+   ouvert (à partir de la 0.14.2 ; le lendemain avec la 0.14.0 et la 0.14.1) : un message propose
    **Mettre à jour**. Le numéro vient du nom du `.vsix` joint à la Release (`dsfr-markdown-preview-X.Y.Z.vsix`,
    d'après la version du `package.json`), pas de l'étiquette ; la Release ne doit pas être une préversion
    ni un brouillon (`lib/update.js`).
