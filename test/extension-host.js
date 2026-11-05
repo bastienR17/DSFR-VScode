@@ -554,6 +554,10 @@ async function lintVia(document) {
   const vDoc = textDocument(new Uri('/tmp/other/v.md'), '| **Version** | **Date** | **Emetteur** | **Suivi des modifications** |\n|---|---|---|---|\n| V1 | 01/02/2025 | MATTE / DSNUMRH4 | Création |\n| V2 | 01/03/2026 | MATTE / DSNUMRH4 | Ajout |\ndsfr-sirh-version');
   const vItem = completionProvider.provider.provideCompletionItems(vDoc, { line: 4, character: 17 }, null, { triggerKind: 1, triggerCharacter: '-' }).find((i) => i.label === 'dsfr-sirh-version');
   assert(/^\| V3 \| \d\d\/\d\d\/\d{4} \| \$\{2:MATTE \/ DSNUMRH4\} \| \$\{1:Ce qui a changé\} \|\$0$/.test(vItem.insertText.value), vItem.insertText.value);
+  // Tapé au bout de la dernière ligne du tableau : la nouvelle ligne commence à la ligne suivante
+  const vEnd = textDocument(new Uri('/tmp/other/v2.md'), '| Version | Date |\n|---|---|\n| V1 | 01/02/2025 |dsfr-sirh-version');
+  const vEndItem = completionProvider.provider.provideCompletionItems(vEnd, { line: 2, character: 35 }, null, { triggerKind: 1, triggerCharacter: '-' }).find((i) => i.label === 'dsfr-sirh-version');
+  assert(/^\n\| V2 \| /.test(vEndItem.insertText.value), vEndItem.insertText.value);
   const v0 = completionProvider.provider.provideCompletionItems(textDocument(new Uri('/tmp/other/v0.md'), 'dsfr-sirh-version'), { line: 0, character: 17 }, null, { triggerKind: 0 }).find((i) => i.label === 'dsfr-sirh-version');
   assert(v0.insertText.value.startsWith('| V${1:1} |'), 'sans tableau : V1');
   const optDoc = textDocument(new Uri('/tmp/other/opts.md'), '/// tile | Titre\n    picto: build\n');

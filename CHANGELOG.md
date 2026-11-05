@@ -2,6 +2,13 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## 0.14.1 — novembre 2026
+
+### Corrections
+- `dsfr-sirh-version` tapé au bout de la dernière ligne du tableau (au lieu d'une ligne vide) : la nouvelle
+  version commence bien sur la ligne suivante.
+- Première version proposée par la mise à jour automatique (pour les postes en 0.14.0).
+
 ## 0.14.0 — novembre 2026
 
 ### Ajouts

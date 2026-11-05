@@ -158,8 +158,8 @@ nouvelle version est sortie (avertissement jaune, sans faire échouer les tests)
    `npm install --no-save playwright && npx playwright install chromium`) ; `test/component-panel.js` échoue s'il en manque une.
 3. Créer et pousser une étiquette (`v` suivi du numéro, sans point après le `v`) :
    ```bash
-   git tag v0.14.0
-   git push origin v0.14.0
+   git tag v0.14.1
+   git push origin v0.14.1
    ```
 4. La CI teste, construit le `.vsix` et le joint à une Release GitHub.
 5. Les postes qui ont l'extension (0.14.0 ou plus) le voient le lendemain au plus tard : un message propose

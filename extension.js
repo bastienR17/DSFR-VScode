@@ -699,7 +699,14 @@ function createAssistProviders(context) {
       const lines = linesOf(document);
       const r = assist.completions(lines, position.line, position.character, assets, {
         invoked,
-        dynamic: { 'dsfr-sirh-version': () => versionSnippet(lines) },
+        dynamic: {
+          'dsfr-sirh-version': () => {
+            const row = versionSnippet(lines);
+            // tapé au bout d'une ligne déjà remplie (la dernière ligne du tableau) : la nouvelle ligne passe à la ligne
+            const before = (lines[position.line] || '').slice(0, position.character).replace(/dsfr-[\w-]*$/, '');
+            return row && before.trim() ? '\n' + row : row;
+          },
+        },
       });
       if (!r) return undefined;
       const range = new vscode.Range(position.line, r.from, position.line, position.character);
