@@ -2,13 +2,55 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## 0.14.0 — novembre 2026
+
+### Ajouts
+- **Mises à jour depuis GitHub** : à l'ouverture de VS Code (au plus une fois par jour), l'extension regarde la
+  dernière Release du dépôt. Si elle est plus récente, un message propose **Mettre à jour** (téléchargement et
+  installation du `.vsix`, puis rechargement), **Voir les nouveautés** ou **Ignorer cette version**. Rien
+  n'est installé sans accord. Commande « Rechercher une mise à jour de l'extension » ; réglage
+  `dsfrPreview.checkUpdates`. Testé de bout en bout avec la vraie Release v0.13 dans VS Code 1.105.
+
+## 0.13.3 — novembre 2026
+
+### Modifications
+- Les **liens complets vers une page du site** (`https://docsirh…/rubrique/page/`) ne sont plus signalés par
+  défaut : ils marchent très bien sur le site. Le conseil (lien vers le `.md`) reste disponible avec le réglage
+  `dsfrPreview.checkAbsoluteLinks`.
+
+## 0.13.2 — novembre 2026
+
+### Modifications
+- **`dsfr-sirh-version` numérote tout seul** : la ligne proposée reprend le tableau « Suivi des modifications »
+  de la page — numéro suivant (V2 → V3), date du jour, émetteur de la dernière version — et le curseur est placé
+  sur « ce qui a changé ». Sans tableau, la ligne commence à V1. De même depuis la boîte à composants et
+  « Insérer un composant ».
+- Les snippets `dsfr-` sont proposés par l'extension elle-même (à la frappe du « - » et avec Ctrl+Espace), et
+  non plus par la liste fixe de VS Code, pour pouvoir calculer leur contenu d'après la page.
+
+## 0.13.1 — novembre 2026
+
+### Modifications
+- **Images collées depuis Word** : chacune devient une image dont l'adresse est préremplie jusqu'au répertoire
+  des images (`https://docsirh.e2.rie.gouv.fr/fichiers/`), comme avec le composant « Image ». Après le collage,
+  le curseur est sur le nom du fichier ; **Tab** passe à la description (reprise de Word quand elle a été écrite),
+  puis à l'image suivante.
+- Nouvel avertissement : **nom d'image à compléter** quand l'adresse d'une image s'arrête à « …/fichiers/ »
+  (sans nom, l'image n'apparaît pas sur le site).
+
+### Corrections
+- Les images de Word enregistrées sous deux formes (VML et image de remplacement) étaient ignorées au collage.
+- Collage depuis Word : listes reconnues aussi quand le HTML de Word a été réécrit par un navigateur (sans les
+  styles « mso-list »), et blocs de Word sous forme de commentaires ; une image seule suffit à proposer le collage
+  en Markdown.
+
 ## 0.13.0 — novembre 2026
 
 ### Ajouts
 - **Coller depuis Word, Excel ou Google Docs** : ce qui est collé dans une page devient du Markdown propre —
   titres, paragraphes, gras et italique (sans espace collé aux `**`), listes et sous-listes de Word (4 espaces,
   comme le veut le site), tableaux (cellules fusionnées complétées), liens. Deux listes à la suite restent
-  séparées sur le site. Les images de Word sont remplacées par un repère invisible sur le site. Le bouton qui
+  séparées sur le site. Le bouton qui
   apparaît après le collage permet de revenir au simple texte ; réglage `dsfrPreview.pasteFromWord`.
   Pour les versions de VS Code antérieures à 1.97 : commande « Coller depuis Word ou Excel (texte seul) ».
 - **Barre de mise en forme** en haut des pages : gras, titre, listes à puces et numérotées, lien, italique

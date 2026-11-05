@@ -3,7 +3,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
-const { htmlToMarkdown, tabsToTable, plainToMarkdown, IMAGE_NOTE } = require('../lib/html-to-markdown');
+const { htmlToMarkdown, tabsToTable, plainToMarkdown } = require('../lib/html-to-markdown');
 const createMd = require('./vscode-like');
 
 const fixture = (f) => fs.readFileSync(path.join(__dirname, 'fixtures', f), 'utf8');
@@ -12,7 +12,7 @@ const md = createMd({ showErrors: () => true });
 // Word : titre, gras sans espace dans les « ** », listes et sous-listes (4 espaces), tableau, lien, image
 let r = htmlToMarkdown(fixture('word-modop.html'));
 assert.strictEqual(r.source, 'word');
-assert.strictEqual(r.images, 1);
+assert.strictEqual(r.images, 2, 'images de Word (doublon VML compté une fois)');
 assert.strictEqual(r.markdown, [
   '## Rechercher l’acte',
   '',
@@ -32,7 +32,9 @@ assert.strictEqual(r.markdown, [
   '| V1 | 01/02/2026 | Création<br>Ligne 2 \\| pipe |',
   '| Fusion |   | x |',
   '',
-  IMAGE_NOTE,
+  '![Description de l\'image](https://docsirh.e2.rie.gouv.fr/fichiers/)',
+  '',
+  '![Écran de recherche de l\'acte](https://docsirh.e2.rie.gouv.fr/fichiers/)',
   '',
   '\\# pas un titre',
 ].join('\n'));
@@ -42,6 +44,17 @@ assert(/<ol>\s*<li>Ouvrir RenoiRH<\/li>/.test(html));
 assert(/<table[\s\S]*<strong>Version<\/strong>[\s\S]*Ligne 2 \| pipe/.test(html), 'tableau');
 assert(!/<h1>/.test(html) && /<p># pas un titre<\/p>/.test(html));
 assert(!html.includes('dsfr-error'), 'aucune erreur dans le rendu');
+// Images : snippet VS Code, curseur sur le nom du fichier (1), puis la description (2), image suivante (3, 4)
+assert(r.snippet.includes('![${2:Description de l\'image}](https://docsirh.e2.rie.gouv.fr/fichiers/${1})\n\n![${4:Écran de recherche de l\'acte}](https://docsirh.e2.rie.gouv.fr/fichiers/${3})'), r.snippet);
+assert(r.snippet.includes('Valider \\\\*2\\\\* fois') && r.snippet.endsWith('$0'), 'texte protégé dans le snippet');
+assert.strictEqual(htmlToMarkdown('<p><b>x</b></p>').snippet, null, 'sans image : texte simple');
+assert.strictEqual(htmlToMarkdown('<img src="a.png" alt="A">', { imageBase: 'https://exemple.fr/fichiers' }).markdown, '![A](https://exemple.fr/fichiers/)');
+
+// Le même contenu Word réécrit par un navigateur (styles « mso-list » et retraits supprimés) : même résultat
+assert.strictEqual(htmlToMarkdown(fixture('word-navigateur.html')).markdown, r.markdown);
+// Blocs de Word sous forme de commentaires : <!--[if !supportLists]-->…<!--[endif]-->
+assert.strictEqual(htmlToMarkdown('<p class=MsoListParagraph style="mso-list:l0 level1 lfo1"><!--[if !supportLists]--><span>1.&nbsp;</span><!--[endif]-->Un</p><p><!--[if !vml]--><img src="x.png" alt="A"><!--[endif]--></p>').markdown, '1. Un\n\n![A](https://docsirh.e2.rie.gouv.fr/fichiers/)');
+assert.strictEqual(htmlToMarkdown('<p>Avant</p><p><img src="a.png" alt="A"></p>').rich, true, 'une image suffit');
 
 // Google Docs : la page entière est dans un <b style="font-weight:normal">
 r = htmlToMarkdown(fixture('gdocs.html'));

@@ -53,7 +53,7 @@ Plus rapide une fois l'habitude prise : sur une ligne vide, taper `dsfr-` ; la l
 | une consigne (encadré en italique) | `dsfr-sirh-consigne` |
 | une capture d'écran | `dsfr-sirh-capture` (ou `dsfr-img` pour une image simple) |
 | le chemin dans l'application (`⮡ Domaine › …`) | `dsfr-sirh-chemin` |
-| une nouvelle ligne du suivi des modifications, datée du jour | `dsfr-sirh-version` |
+| une nouvelle ligne du suivi des modifications (numéro suivant, date du jour) | `dsfr-sirh-version` |
 | 2 ou 3 cartes, 2 ou 3 tuiles côte à côte | `dsfr-carte-2`, `dsfr-sirh-cartes-3`, `dsfr-tuile-3`… |
 | une alerte, un accordéon | `dsfr-alerte`, `dsfr-accordeon` |
 
@@ -66,8 +66,10 @@ La liste complète est dans le [README](../README.md#snippets).
 ### Reprendre un ancien mode opératoire Word
 
 Copier le texte dans Word (ou Excel, Google Docs), puis **Ctrl+V** dans la page : titres, gras, listes et
-tableaux arrivent déjà en Markdown. Les images ne suivent pas : un repère vert `<!-- Image copiée depuis Word… -->`
-indique où les ajouter (après les avoir déposées dans le répertoire des images, avec le composant « Image »).
+tableaux arrivent déjà en Markdown. Les images ne suivent pas (elles sont sur l'ordinateur) : à leur place, l'adresse
+`https://docsirh.e2.rie.gouv.fr/fichiers/` est déjà écrite et le curseur attend le nom du fichier. Déposer
+l'image dans le répertoire des images, taper son nom (par exemple `capture-saisie.png`), **Tab** pour la
+description, **Tab** pour l'image suivante. Une image dont le nom manque est comptée dans les points à corriger.
 Pour coller en simple texte, cliquer sur le petit bouton qui apparaît après le collage.
 
 ### Mettre en forme sans retenir les symboles
@@ -77,7 +79,8 @@ Les boutons en haut à droite de la page marchent comme dans Word : sélectionne
 
 ### Nouvelle version de la page
 
-Cliquer sur le bouton **⟲** (à côté du lien) : une ligne est ajoutée au tableau « Suivi des modifications » avec
+Sur une ligne vide sous le tableau « Suivi des modifications », taper `dsfr-sirh-version` puis **Entrée**
+(ou cliquer sur le bouton en forme d'horloge, en haut à droite, à côté du lien) : une ligne est ajoutée au tableau « Suivi des modifications » avec
 le numéro suivant et la date du jour. Écrire ce qui a changé, **Tab** pour changer l'émetteur si besoin.
 Si la page n'a pas encore ce tableau, l'extension propose de l'ajouter sous le titre.
 

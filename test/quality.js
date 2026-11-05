@@ -101,4 +101,17 @@ for (const ok of [
   '```\n# commentaire\n\ncode\n```\n',             // bloc de code
 ]) assert.deepStrictEqual(warnings(ok), [], ok);
 
-console.log('Conseils : images sans description, liens absolus vers le site ; liens mal formés, astérisques échappés, titres coupés OK');
+// Nom d'image à compléter (adresse arrêtée à « …/fichiers/ », après un collage depuis Word ou « Image »)
+issues = checkQuality([
+  '![Description](https://docsirh.e2.rie.gouv.fr/fichiers/)',
+  '<img',
+  'src="https://docsirh.e2.rie.gouv.fr/fichiers/"',
+  'alt="Capture" />',
+  '![Écran](https://docsirh.e2.rie.gouv.fr/fichiers/saisie.png)',
+  '[Le répertoire](https://docsirh.e2.rie.gouv.fr/fichiers/)',
+  '`![x](https://docsirh.e2.rie.gouv.fr/fichiers/)`',
+].join('\n'), {}).filter((i) => i.code === 'dsfr-img-name');
+assert.deepStrictEqual(issues.map((i) => [i.severity, i.range.line, i.range.start, i.range.end]), [['warning', 0, 15, 55], ['warning', 2, 5, 45]]);
+assert(/écrivez son nom juste après « fichiers\/ »/.test(issues[0].message));
+
+console.log('Conseils : images sans description, liens absolus vers le site ; liens mal formés, astérisques échappés, titres coupés, noms d\'image à compléter OK');

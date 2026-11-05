@@ -657,9 +657,9 @@
     "prefix": [
       "dsfr-sirh-version"
     ],
-    "description": "Doc SIRH — ligne à ajouter au tableau « Suivi des modifications », datée du jour",
+    "description": "Doc SIRH — ligne à ajouter au tableau « Suivi des modifications » : numéro suivant (V2 → V3), date du jour et émetteur repris automatiquement",
     "body": [
-      "| V${1} | $CURRENT_DATE/$CURRENT_MONTH/$CURRENT_YEAR | ${2:MATTE / DSNUMRH4} | ${3:Mise à jour} |$0"
+      "| V${1:1} | $CURRENT_DATE/$CURRENT_MONTH/$CURRENT_YEAR | ${2:MATTE / DSNUMRH4} | ${3:Mise à jour} |$0"
     ]
   },
   "Doc SIRH : documents de référence": {

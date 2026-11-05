@@ -37,7 +37,14 @@ assert.strictEqual(r.from, 6);
 assert.strictEqual(complete('mot-dsfr-¦'), null, 'pas au milieu d\'un mot');
 assert.strictEqual(complete('- liste¦'), null);
 const p = at('dsfr-¦');
-assert.strictEqual(completions(p.lines, p.line, p.character, assets, { snippets: false }), null, 'Ctrl+Espace : VS Code les propose déjà');
+assert.strictEqual(completions(p.lines, p.line, p.character, assets, { snippets: false }), null, 'snippets coupés');
+// Ctrl+Espace : « dsfr » suffit ; corps calculé d'après la page (dsfr-sirh-version)
+const q = at('dsfr¦');
+assert.strictEqual(completions(q.lines, q.line, q.character, assets), null, 'sans Ctrl+Espace, il faut le « - »');
+assert.strictEqual(completions(q.lines, q.line, q.character, assets, { invoked: true }).items.length, snippetCount);
+const dyn = completions(p.lines, p.line, p.character, assets, { dynamic: { 'dsfr-sirh-version': () => '| V7 |$0', 'dsfr-alerte': () => null } });
+assert.strictEqual(dyn.items.find((i) => i.label === 'dsfr-sirh-version').insertText, '| V7 |$0');
+assert(dyn.items.find((i) => i.label === 'dsfr-alerte').insertText.startsWith('/// alert'), 'null : snippet fixe');
 
 // Noms de blocs
 r = complete('Texte\n\n/// ¦');

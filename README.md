@@ -54,12 +54,14 @@ Extension créée par **Bastien** ([@bastienR17](https://github.com/bastienR17))
 - **Une boîte à composants** dans la barre de gauche (icône **DSFR**) : chaque composant avec une miniature de son
   rendu, une recherche, et un clic pour l'insérer dans la page.
 - **Coller depuis Word, Excel ou Google Docs** : le contenu collé devient du Markdown propre (titres, gras,
-  italique, listes et sous-listes, tableaux, liens). Les images de Word, qui sont sur l'ordinateur, sont
-  remplacées par un repère invisible sur le site, à l'endroit où les ajouter. Le bouton qui apparaît après le
+  italique, listes et sous-listes, tableaux, liens). Les images de Word, qui sont sur l'ordinateur, deviennent
+  des images dont l'adresse est préremplie jusqu'à `…/fichiers/`, comme avec le composant « Image » : le curseur
+  s'y place pour écrire le nom du fichier déposé (**Tab** passe à la description, puis à l'image suivante). Tant
+  que le nom manque, la ligne est signalée. Le bouton qui apparaît après le
   collage permet de revenir au simple texte.
 - **Une barre de mise en forme**, comme dans Word, en haut de chaque page : gras, titre, listes à puces et
   numérotées, lien (italique dans le menu « … »). Un second clic retire la mise en forme.
-- **Nouvelle version en un clic** (bouton ⟲ de la barre) : une ligne est ajoutée au tableau « Suivi des
+- **Nouvelle version en un clic** (`dsfr-sirh-version`, ou le bouton en forme d'horloge de la barre) : une ligne est ajoutée au tableau « Suivi des
   modifications », avec le numéro suivant (V2 → V3), la date du jour et l'émetteur de la version précédente ;
   il ne reste qu'à écrire ce qui a changé.
 - **Pensé pour les rédacteurs non techniciens** : les messages sont en français simple (ce qui ne va pas, et quoi faire) ;
@@ -80,7 +82,13 @@ Extension créée par **Bastien** ([@bastienR17](https://github.com/bastienR17))
    (ou en ligne de commande : `code --install-extension dsfr-markdown-preview-<version>.vsix`).
 3. Recharger la fenêtre : **Ctrl+Maj+P** → **Developer: Reload Window**.
 
-Pour mettre à jour, installer le nouveau `.vsix` de la même façon.
+**Mises à jour automatiques** (à partir de la 0.14.0) : à l'ouverture de VS Code, au plus une fois par jour,
+l'extension regarde la dernière Release sur GitHub. Si elle est plus récente, un message propose
+**Mettre à jour** : le `.vsix` est téléchargé et installé, puis VS Code propose de se recharger. Rien n'est
+installé sans ce clic. Commande **DSFR : Rechercher une mise à jour de l'extension** pour vérifier tout de suite ;
+réglage `dsfrPreview.checkUpdates` pour couper la vérification. Les postes doivent pouvoir joindre GitHub
+(`api.github.com` et les téléchargements de `github.com`) ; sinon, installer le nouveau `.vsix` à la main,
+de la même façon.
 
 Première utilisation ? Le [guide de prise en main](docs/prise-en-main.md) montre en 5 minutes comment
 ouvrir l'aperçu, insérer un composant et corriger une erreur.
@@ -143,9 +151,10 @@ L'extension analyse la page ouverte (et seulement elle) pendant que vous écrive
   affichés au lieu du gras, titre coupé en deux (la fin du titre, en minuscule, passée à la ligne suivante).
   Chacun a sa correction dans l'ampoule. Une ligne de grille `/// row` non fermée avant la suivante est
   signalée avec la ligne exacte où ajouter `///`.
-- **Conseils** (soulignés en pointillés bleus, non comptés dans la barre d'état) : lien absolu vers une page du site (`https://docsirh.e2.rie.gouv.fr/Rubrique/Page/`) :
-  l'ampoule propose le lien relatif vers le fichier `.md` quand il est trouvé dans le dossier. Les liens
-  vers `…/fichiers/` ne sont pas concernés.
+- **Conseils facultatifs** (soulignés en pointillés bleus, non comptés dans la barre d'état), coupés par défaut :
+  images sans description (`dsfrPreview.checkImageAlt`) et liens complets vers une page du site
+  (`dsfrPreview.checkAbsoluteLinks` : l'ampoule propose alors le lien vers le fichier `.md` quand il est trouvé
+  dans le dossier ; les liens vers `…/fichiers/` ne sont pas concernés).
 
 ### Snippets
 
@@ -184,7 +193,7 @@ Les blocs tels que l'équipe DSNUMRH4 les écrit dans Doc SIRH. Taper `dsfr-sirh
 | `dsfr-sirh-fil-ariane` | Fil d'Ariane en HTML (Accueil, rubrique, sous-rubrique, page courante) |
 | `dsfr-sirh-fil-ariane-niveau` | Un niveau de plus dans le fil d'Ariane |
 | `dsfr-sirh-suivi` | Accordéon « Suivi des modifications » avec son tableau |
-| `dsfr-sirh-version` | Nouvelle ligne du suivi des modifications, datée du jour automatiquement |
+| `dsfr-sirh-version` | Nouvelle ligne du suivi des modifications : numéro suivant (V2 → V3) d'après le tableau de la page, date du jour et émetteur repris automatiquement |
 | `dsfr-sirh-docs-ref` | Tableau « Documents de référence » |
 | `dsfr-sirh-chemin` | Chemin dans l'application : `⮡ Domaine` › `⮡ Thème` › `⮡ Action fonctionnelle` |
 | `dsfr-sirh-capture` | Capture d'écran hébergée dans `fichiers/`, avec sa description et sa largeur |
@@ -277,7 +286,8 @@ le mieux est de corriger aussi ce script pour qu'il mette les valeurs entre guil
 | `dsfrPreview.showErrors` | `true`, `false` | `true` | Afficher les encadrés d'erreur dans l'aperçu et souligner les problèmes dans l'éditeur |
 | `dsfrPreview.checkLinks` | `true`, `false` | `true` | Souligner les liens, images et ancres introuvables, et les syntaxes non activées dans le `mkdocs.yml` |
 | `dsfrPreview.checkImageAlt` | `true`, `false` | `false` | Signaler les images sans description (conseil d'accessibilité, coupé par défaut) |
-| `dsfrPreview.siteUrl` | adresse | `https://docsirh.e2.rie.gouv.fr` | Adresse du site, pour signaler les liens absolus vers ses pages (le `site_url` du `mkdocs.yml` est prioritaire ; réglage vide : pas de vérification) |
+| `dsfrPreview.checkAbsoluteLinks` | `true`, `false` | `false` | Signaler les liens complets vers une page du site, en proposant le lien vers le `.md` (conseil coupé par défaut) |
+| `dsfrPreview.siteUrl` | adresse | `https://docsirh.e2.rie.gouv.fr` | Adresse du site, pour `checkAbsoluteLinks` (le `site_url` du `mkdocs.yml` est prioritaire ; réglage vide : pas de vérification) |
 | `dsfrPreview.mkdocsCompat` | `true`, `false` | `true` | Reproduire les règles Markdown du site |
 | `dsfrPreview.autoOpen` | `true`, `false` | `true` | Ouvrir l'aperçu à côté automatiquement à la première page Markdown ouverte |
 | `dsfrPreview.colors` | `true`, `false` | `true` | Couleurs DSFR des blocs `///` dans l'éditeur (rouge Marianne, bleu France, vert, violet) |
@@ -287,6 +297,7 @@ le mieux est de corriger aussi ce script pour qu'il mette les valeurs entre guil
 | `dsfrPreview.siteBrand`, `siteTitle`, `siteTagline` | texte | ceux de Doc SIRH | Bloc-marque, titre et sous-titre de l'en-tête, si le `mkdocs.yml` du site n'est pas trouvé |
 | `dsfrPreview.formatBar` | `true`, `false` | `true` | Barre de mise en forme en haut des pages Markdown |
 | `dsfrPreview.pasteFromWord` | `true`, `false` | `true` | Transformer en Markdown ce qui est collé depuis Word, Excel, Google Docs ou une page web |
+| `dsfrPreview.checkUpdates` | `true`, `false` | `true` | Chercher une nouvelle version sur GitHub (une fois par jour) et proposer de l'installer |
 | `dsfrPreview.devMode` | `true`, `false` | `false` | Mode développeur : « Vérifier toutes les pages du dossier » dans la palette des commandes |
 
 **Mode développeur.** **Ctrl+Alt+Maj+V** (**Cmd+Alt+Maj+V** sur Mac) vérifie toutes les pages du dossier ouvert

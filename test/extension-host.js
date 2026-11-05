@@ -11,6 +11,28 @@ const updates = [];
 const calls = [];
 const webviewProviders = {};
 const otherDiagStores = {};
+const commandArgs = [];
+const opened = [];
+// Faux module https (mise à jour depuis GitHub) : réponses par adresse
+let httpsRoutes = null;
+const fakeHttps = {
+  get(url, opts, cb) {
+    const { EventEmitter } = require('events');
+    const { Readable } = require('stream');
+    const req = new EventEmitter();
+    req.destroy = (e) => req.emit('error', e);
+    setImmediate(() => {
+      const route = httpsRoutes && httpsRoutes[url];
+      if (!route) { req.emit('error', new Error('getaddrinfo ENOTFOUND')); return; }
+      const res = Readable.from([Buffer.from(route.body || '')]);
+      res.statusCode = route.status || 200;
+      res.headers = route.headers || {};
+      httpsRoutes.seen.push([url, opts.headers['User-Agent']]);
+      cb(res);
+    });
+    return req;
+  },
+};
 let pasteProvider = null;
 let clipboardText = '';
 const progressTitles = [];
@@ -59,6 +81,7 @@ class Uri {
   constructor(p) { this.fsPath = p; this.scheme = 'file'; }
   toString() { return 'file://' + this.fsPath; }
   static file(p) { return new Uri(p); }
+  static parse(u) { const x = new Uri(u); x.toString = () => u; return x; }
   static joinPath(u, ...parts) { return new Uri(path.join(u.fsPath, ...parts)); }
 }
 // Éditeurs affichés (colonne → document) et suivi du focus, pour vérifier la disposition côte à côte
@@ -181,8 +204,9 @@ const vscode = {
   },
   commands: {
     registerCommand: (id, fn) => { commands[id] = fn; return { dispose() {} }; },
-    executeCommand: async (id) => {
+    executeCommand: async (id, ...args) => {
       calls.push(id);
+      commandArgs.push([id, ...args]);
       if (id === 'markdown.showPreviewToSide') focused = 'preview'; // comme VS Code : l'aperçu prend le focus
       if (id === 'workbench.action.moveEditorToNewWindow' && oldVsCode) throw new Error('command not found');
     },
@@ -245,14 +269,19 @@ const vscode = {
     return { Empty: kind(''), Text: kind('text') };
   })(),
   DocumentPasteEdit: class { constructor(insertText, title, kind) { Object.assign(this, { insertText, title, kind }); } },
-  env: { clipboard: { readText: async () => clipboardText } },
+  env: { clipboard: { readText: async () => clipboardText }, openExternal: async (u) => { opened.push(String(u)); return true; } },
+  ExtensionMode: { Production: 1, Development: 2, Test: 3 },
   Uri,
   ViewColumn: { One: 1, Two: 2, Beside: -2 },
   StatusBarAlignment: { Right: 2 },
   ConfigurationTarget: { Global: 1, Workspace: 2, WorkspaceFolder: 3 },
 };
 const orig = Module._load;
-Module._load = function (req, ...rest) { return req === 'vscode' ? vscode : orig.call(this, req, ...rest); };
+Module._load = function (req, ...rest) {
+  if (req === 'vscode') return vscode;
+  if (req === 'https' && httpsRoutes) return fakeHttps;
+  return orig.call(this, req, ...rest);
+};
 
 // Diagnostics d'un document : on l'ouvre, puis on déclenche un changement de réglage,
 // qui relance l'analyse de tous les documents ouverts.
@@ -265,7 +294,13 @@ async function lintVia(document) {
 
 (async () => {
   const ext = require('../extension.js');
-  const ctx = { subscriptions: [], asAbsolutePath: (p) => path.join(__dirname, '..', p) };
+  const globalStore = new Map();
+  const ctx = {
+    subscriptions: [], asAbsolutePath: (p) => path.join(__dirname, '..', p),
+    extensionMode: 3, // mode test : pas de vérification automatique (réseau) pendant les tests
+    extension: { packageJSON: require('../package.json') },
+    globalState: { get: (k) => globalStore.get(k), update: async (k, v) => { globalStore.set(k, v); } },
+  };
   const api = await ext.activate(ctx);
   const MarkdownIt = require('markdown-it');
   const md = api.extendMarkdownIt(new MarkdownIt({ html: true }));
@@ -392,8 +427,9 @@ async function lintVia(document) {
   const tipText = '# Page\n\n![](img.png) voir [Autre](https://docsirh.e2.rie.gouv.fr/autre/) et [PDF](https://docsirh.e2.rie.gouv.fr/fichiers/a.pdf)\n';
   fs.writeFileSync(path.join(site, 'docs', 'img.png'), '');
   const tipDoc = textDocument(new Uri(path.join(site, 'docs', 'conseils.md')), tipText);
-  assert.deepStrictEqual((await lintVia(tipDoc)).map((d) => d.code), ['dsfr-absolute-link'], 'images sans description : non signalées par défaut');
+  assert.deepStrictEqual((await lintVia(tipDoc)).map((d) => d.code), [], 'images sans description et liens complets : non signalés par défaut');
   settings.checkImageAlt = true;
+  settings.checkAbsoluteLinks = true;
   const tipDiags = await lintVia(tipDoc);
   assert.deepStrictEqual(tipDiags.map((d) => [d.code, d.severity]), [['dsfr-img-alt', 2], ['dsfr-absolute-link', 2]]);
   const tipActions = codeActionProvider.provideCodeActions(tipDoc, tipDiags[1].range, { diagnostics: [tipDiags[1]] });
@@ -505,12 +541,21 @@ async function lintVia(document) {
 
   // Autocomplétion et survol branchés sur l'éditeur
   assert.deepStrictEqual(completionProvider.triggers, ['/', ' ', ':', '-']);
-  // « dsfr- » : la liste des snippets s'ouvre à la frappe du « - », pas en double sur Ctrl+Espace
+  // « dsfr- » : la liste des snippets s'ouvre à la frappe du « - » et avec Ctrl+Espace (les snippets viennent
+  // tous de l'extension : pas de liste fixe de VS Code en double)
+  assert.strictEqual(manifest.snippets, undefined, 'pas de snippets fixes déclarés à VS Code');
   const snipDoc = textDocument(new Uri('/tmp/other/snip.md'), 'dsfr-');
   const snipItems = completionProvider.provider.provideCompletionItems(snipDoc, { line: 0, character: 5 }, null, { triggerKind: 1, triggerCharacter: '-' });
   assert(snipItems.length > 20 && snipItems.every((i) => i.kind === vscode.CompletionItemKind.Snippet));
   assert.strictEqual(snipItems.find((i) => i.label === 'dsfr-img').insertText.value, '![$2](https://docsirh.e2.rie.gouv.fr/fichiers/$1)$0');
-  assert.strictEqual(completionProvider.provider.provideCompletionItems(snipDoc, { line: 0, character: 5 }, null, { triggerKind: 0 }), undefined);
+  assert.strictEqual(completionProvider.provider.provideCompletionItems(snipDoc, { line: 0, character: 5 }, null, { triggerKind: 0 }).length, snipItems.length, 'Ctrl+Espace');
+  assert(completionProvider.provider.provideCompletionItems(textDocument(new Uri('/tmp/other/s2.md'), 'dsfr'), { line: 0, character: 4 }, null, { triggerKind: 0 }).length > 20, 'Ctrl+Espace après « dsfr »');
+  // dsfr-sirh-version : numéro suivant, d'après le tableau de la page
+  const vDoc = textDocument(new Uri('/tmp/other/v.md'), '| **Version** | **Date** | **Emetteur** | **Suivi des modifications** |\n|---|---|---|---|\n| V1 | 01/02/2025 | MATTE / DSNUMRH4 | Création |\n| V2 | 01/03/2026 | MATTE / DSNUMRH4 | Ajout |\ndsfr-sirh-version');
+  const vItem = completionProvider.provider.provideCompletionItems(vDoc, { line: 4, character: 17 }, null, { triggerKind: 1, triggerCharacter: '-' }).find((i) => i.label === 'dsfr-sirh-version');
+  assert(/^\| V3 \| \d\d\/\d\d\/\d{4} \| \$\{2:MATTE \/ DSNUMRH4\} \| \$\{1:Ce qui a changé\} \|\$0$/.test(vItem.insertText.value), vItem.insertText.value);
+  const v0 = completionProvider.provider.provideCompletionItems(textDocument(new Uri('/tmp/other/v0.md'), 'dsfr-sirh-version'), { line: 0, character: 17 }, null, { triggerKind: 0 }).find((i) => i.label === 'dsfr-sirh-version');
+  assert(v0.insertText.value.startsWith('| V${1:1} |'), 'sans tableau : V1');
   const optDoc = textDocument(new Uri('/tmp/other/opts.md'), '/// tile | Titre\n    picto: build\n');
   const items = completionProvider.provider.provideCompletionItems(optDoc, { line: 1, character: 16 });
   assert(items.length > 10 && items.every((i) => i.range.sc === 11), 'valeurs de picto, remplacement de « build »');
@@ -661,9 +706,12 @@ async function lintVia(document) {
   let edits = await pasteProvider.provider.provideDocumentPasteEdits(pasteDoc, at, transfer({ 'text/html': fs.readFileSync(path.join(__dirname, 'fixtures', 'word-modop.html'), 'utf8') }), { triggerKind: 0 }, {});
   assert.strictEqual(edits.length, 1);
   assert.strictEqual(edits[0].title, 'Markdown DSFR (depuis Word)');
-  assert(edits[0].insertText.startsWith('\n## Rechercher l’acte\n') && edits[0].insertText.endsWith('\\# pas un titre\n'), 'lignes vides autour');
+  assert(edits[0].insertText instanceof vscode.SnippetString, 'images : snippet');
+  assert(edits[0].insertText.value.startsWith('\n## Rechercher l’acte\n') && edits[0].insertText.value.endsWith('\\\\# pas un titre$0\n'), 'lignes vides autour');
+  assert(edits[0].insertText.value.includes('](https://docsirh.e2.rie.gouv.fr/fichiers/${1})'), 'curseur sur le nom de la première image');
   edits = await pasteProvider.provider.provideDocumentPasteEdits(pasteDoc, at, transfer({ 'text/plain': 'A\tB\n1\t2' }), { triggerKind: 0 }, {});
   assert.strictEqual(edits[0].title, 'Tableau Markdown (depuis Excel)');
+  assert.strictEqual(typeof edits[0].insertText, 'string');
   assert.strictEqual(await pasteProvider.provider.provideDocumentPasteEdits(pasteDoc, at, transfer({ 'text/plain': 'mot' }), { triggerKind: 0 }, {}), undefined, 'texte simple : collage normal');
   assert.strictEqual(await pasteProvider.provider.provideDocumentPasteEdits(pasteDoc, at, transfer({ 'text/html': '<b>x</b>', 'vscode-editor-data': '{}' }), { triggerKind: 0 }, {}), undefined, 'copie faite dans VS Code');
   assert.strictEqual(await pasteProvider.provider.provideDocumentPasteEdits(pasteDoc, at, transfer({ 'text/html': '<span>x</span>' }), { triggerKind: 0 }, {}), undefined, 'HTML sans mise en forme');
@@ -678,6 +726,53 @@ async function lintVia(document) {
   assert.strictEqual(ed.text, 'Premier.\n\n- Un\n- Deux');
   vscode.window.activeTextEditor = null;
 
+  // Mise à jour depuis GitHub (commande « Rechercher une mise à jour ») : Release plus récente, téléchargement
+  // (avec redirection vers les serveurs de fichiers de GitHub), installation, rechargement
+  const current = require('../package.json').version;
+  const latest = 'https://api.github.com/repos/bastienR17/DSFR-VScode/releases/latest';
+  const asset = 'https://github.com/bastienR17/DSFR-VScode/releases/download/v99.0/dsfr-markdown-preview-99.0.0.vsix';
+  const release = (v) => JSON.stringify({ tag_name: 'v' + v, html_url: 'https://github.com/bastienR17/DSFR-VScode/releases/tag/v' + v, draft: false, prerelease: false,
+    assets: [{ name: 'dsfr-markdown-preview-' + v + '.vsix', browser_download_url: asset }] });
+  httpsRoutes = { seen: [],
+    [latest]: { body: release('99.0.0') },
+    [asset]: { status: 302, headers: { location: 'https://objects.githubusercontent.com/github-production-release-asset/abc' } },
+    'https://objects.githubusercontent.com/github-production-release-asset/abc': { body: 'PK-faux-vsix' },
+  };
+  const infoMsg = vscode.window.showInformationMessage;
+  const prompts = [];
+  vscode.window.showInformationMessage = async (m, ...actions) => { prompts.push([m, actions]); return actions.find((a) => a === 'Mettre à jour' || a === 'Recharger VS Code'); };
+  commandArgs.length = 0;
+  await commands['dsfrPreview.checkUpdates']();
+  assert.strictEqual(prompts[0][0], 'Une nouvelle version de l\'Aperçu DSFR est disponible : 99.0.0 (vous avez la ' + current + ').');
+  assert.deepStrictEqual(prompts[0][1], ['Mettre à jour', 'Voir les nouveautés', 'Ignorer cette version']);
+  assert(httpsRoutes.seen.every(([, ua]) => ua === 'dsfr-markdown-preview'), 'en-tête User-Agent (exigé par GitHub)');
+  const install = commandArgs.find((c) => c[0] === 'workbench.extensions.installExtension');
+  assert(install && install[1].fsPath.endsWith('dsfr-markdown-preview-99.0.0.vsix'), 'vsix téléchargé puis installé');
+  assert.strictEqual(fs.readFileSync(install[1].fsPath, 'utf8'), 'PK-faux-vsix');
+  assert(/99\.0\.0 est installé/.test(prompts[1][0]) && calls.includes('workbench.action.reloadWindow'), 'rechargement proposé');
+  assert(Number.isFinite(globalStore.get('dsfr.update.lastCheck')));
+  // Déjà à jour
+  prompts.length = 0;
+  httpsRoutes[latest] = { body: release(current) };
+  await commands['dsfrPreview.checkUpdates']();
+  assert.deepStrictEqual(prompts.map((p) => p[0]), ['Aperçu DSFR est à jour (version ' + current + ').']);
+  // « Voir les nouveautés » : page de la Release ; « Ignorer cette version » : retenu
+  httpsRoutes[latest] = { body: release('99.0.0') };
+  vscode.window.showInformationMessage = async (m, ...actions) => actions[1];
+  await commands['dsfrPreview.checkUpdates']();
+  assert.deepStrictEqual(opened, ['https://github.com/bastienR17/DSFR-VScode/releases/tag/v99.0.0']);
+  vscode.window.showInformationMessage = async (m, ...actions) => actions[2];
+  await commands['dsfrPreview.checkUpdates']();
+  assert.strictEqual(globalStore.get('dsfr.update.skip'), '99.0.0');
+  // GitHub injoignable (proxy du ministère…) : message, rien d'installé
+  vscode.window.showInformationMessage = infoMsg;
+  httpsRoutes = { seen: [] };
+  messages.length = 0;
+  commandArgs.length = 0;
+  await commands['dsfrPreview.checkUpdates']();
+  assert(messages[0].startsWith('Impossible de joindre GitHub') && !commandArgs.some((c) => c[0] === 'workbench.extensions.installExtension'));
+  httpsRoutes = null;
+
   // Correction de tout le dossier : rien sans confirmation, puis correction et enregistrement
   modalAnswer = undefined;
   await commands['dsfrPreview.fixFrontMatterInWorkspace']();
@@ -690,5 +785,5 @@ async function lintVia(document) {
   assert.deepStrictEqual(saved.sort(), ['a.md', 'b.md']);
   fs.rmSync(tmp, { recursive: true, force: true });
 
-  console.log('Extension (VS Code simulé) : rendu, bascule, aperçu à côté, nouvelle fenêtre, blocs, en-têtes et liens soulignés, corrections à la demande, liste des problèmes, panneau des composants, vérification du dossier, mise en forme, nouvelle version, collage depuis Word, autocomplétion et survol OK');
+  console.log('Extension (VS Code simulé) : rendu, bascule, aperçu à côté, nouvelle fenêtre, blocs, en-têtes et liens soulignés, corrections à la demande, liste des problèmes, panneau des composants, mise à jour depuis GitHub, vérification du dossier, mise en forme, nouvelle version, collage depuis Word, autocomplétion et survol OK');
 })().catch((e) => { console.error(e); process.exit(1); });

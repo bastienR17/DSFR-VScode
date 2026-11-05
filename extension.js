@@ -33,6 +33,7 @@ const { blockDecorations, COLORS } = require('./lib/decorations');
 const { htmlToMarkdown, tabsToTable, plainToMarkdown, surround } = require('./lib/html-to-markdown');
 const { addVersionRow } = require('./lib/version-row');
 const format = require('./lib/format');
+const update = require('./lib/update');
 
 const SECTION = 'dsfrPreview';
 let statusItem = null;
@@ -51,6 +52,7 @@ function config() {
     openMode: c.get('openMode', 'side'),
     checkLinks: c.get('checkLinks', true),
     checkImageAlt: c.get('checkImageAlt', false),
+    checkAbsoluteLinks: c.get('checkAbsoluteLinks', false),
     siteUrl: c.get('siteUrl', 'https://docsirh.e2.rie.gouv.fr'),
     pageLayout: c.get('pageLayout', 'site'),
     desktopWidth: c.get('desktopWidth', false),
@@ -60,6 +62,7 @@ function config() {
     siteTitle: c.get('siteTitle', DOC_SIRH.titre),
     siteTagline: c.get('siteTagline', DOC_SIRH.sousTitre),
     pasteFromWord: c.get('pasteFromWord', true),
+    checkUpdates: c.get('checkUpdates', true),
   };
 }
 
@@ -301,8 +304,9 @@ function qualityIssues(document, text) {
   const inSite = !!site && isInside(file, site.docsDir);
   return checkQuality(text, {
     checkAlt: c.checkImageAlt,
-    // Réglage vidé : pas de vérification, même si le mkdocs.yml déclare un site_url
-    siteUrl: c.checkLinks && String(c.siteUrl || '').trim() ? ((inSite && site.siteUrl) || c.siteUrl) : '',
+    // Liens complets vers le site : conseil coupé par défaut ; réglage d'adresse vidé : pas de vérification,
+    // même si le mkdocs.yml déclare un site_url
+    siteUrl: c.checkAbsoluteLinks && c.checkLinks && String(c.siteUrl || '').trim() ? ((inSite && site.siteUrl) || c.siteUrl) : '',
     file,
     docsDir: inSite ? site.docsDir : null,
     exists: (p) => fs.existsSync(p),
@@ -517,9 +521,19 @@ async function insertComponent() {
   await insertMenuItem(editor, picked.item);
 }
 
+/**
+ * Ligne « nouvelle version » du suivi des modifications, d'après le tableau de la page : numéro suivant
+ * (V2 → V3), date du jour, émetteur de la dernière version. null sans tableau (le snippet fixe, V1, sert alors).
+ */
+function versionSnippet(lines) {
+  const r = addVersionRow(lines, { today: new Date() });
+  return r.error ? null : r.snippet.replace(/\n$/, '') + '$0';
+}
+
 /** Insère un composant du menu dans l'éditeur (au curseur, ou dans l'en-tête de page pour ses clés). */
 async function insertMenuItem(editor, item) {
   const doc = editor.document;
+  if (item.prefix === 'dsfr-sirh-version') item = { ...item, body: versionSnippet(linesOfDocument(doc)) || item.body };
   const place = headerPlacement(doc.getText().split('\n').map((l) => l.replace(/\r$/, '')), item);
   if (place && place.error) {
     vscode.window.showInformationMessage(place.error);
@@ -679,9 +693,14 @@ function createAssistProviders(context) {
   const completion = {
     provideCompletionItems(document, position, token, context) {
       if (!isEnabled()) return undefined;
-      // Ctrl+Espace : VS Code propose déjà les snippets « dsfr- » ; on ne les ajoute qu'à la frappe du « - ».
+      // Les snippets « dsfr- » viennent d'ici (pas de la liste fixe de VS Code) : à la frappe du « - » et avec
+      // Ctrl+Espace ; dsfr-sirh-version est calculé d'après le tableau de la page (numéro suivant)
       const invoked = !!context && context.triggerKind === vscode.CompletionTriggerKind.Invoke;
-      const r = assist.completions(linesOf(document), position.line, position.character, assets, { snippets: !invoked });
+      const lines = linesOf(document);
+      const r = assist.completions(lines, position.line, position.character, assets, {
+        invoked,
+        dynamic: { 'dsfr-sirh-version': () => versionSnippet(lines) },
+      });
       if (!r) return undefined;
       const range = new vscode.Range(position.line, r.from, position.line, position.character);
       return r.items.map((it, i) => {
@@ -741,13 +760,16 @@ function createPasteProvider() {
       if (dataTransfer.get('vscode-editor-data')) return undefined; // copie faite dans VS Code : collage normal
       const asked = context && context.triggerKind === vscode.DocumentPasteTriggerKind.PasteAs;
       let markdown = null;
+      let snippet = null;
       let title = '';
       const htmlItem = dataTransfer.get('text/html');
       const html = htmlItem ? await htmlItem.asString() : '';
       if (html) {
-        const r = htmlToMarkdown(html);
+        const site = String(config().siteUrl || '').trim().replace(/\/+$/, '') || 'https://docsirh.e2.rie.gouv.fr';
+        const r = htmlToMarkdown(html, { imageBase: site + '/fichiers/' });
         if (r.markdown && (r.rich || asked)) {
           markdown = r.markdown;
+          snippet = r.snippet; // images : curseur sur le nom du fichier, à écrire après « fichiers/ »
           title = 'Markdown DSFR (depuis ' + SOURCE_LABEL[r.source] + ')';
         }
       }
@@ -759,7 +781,9 @@ function createPasteProvider() {
         else if (asked && text) { markdown = plainToMarkdown(text); title = 'Markdown DSFR (texte de Word)'; }
       }
       if (!markdown || (token && token.isCancellationRequested)) return undefined;
-      return [new vscode.DocumentPasteEdit(surround(markdown, aroundOf(document, ranges[0])), title, PASTE_KIND())];
+      const around = aroundOf(document, ranges[0]);
+      const insert = snippet ? new vscode.SnippetString(surround(snippet, around)) : surround(markdown, around);
+      return [new vscode.DocumentPasteEdit(insert, title, PASTE_KIND())];
     },
   };
 }
@@ -996,6 +1020,92 @@ async function checkWorkspace() {
   await listProblems(picked.page.uri);
 }
 
+/* ------------------------------------------------------------------ */
+/* Mise à jour depuis les Releases GitHub (lib/update.js)              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Requête HTTPS (le proxy réglé dans VS Code s'applique) ; suit les redirections vers les serveurs de
+ * fichiers de GitHub. Avec `file`, enregistre la réponse dans ce fichier.
+ */
+function httpsGet(url, { file, json, redirects = 5, timeout = 15000 } = {}) {
+  const https = require('https');
+  return new Promise((resolve, reject) => {
+    if (!update.allowedHost(url)) { reject(new Error('Adresse refusée : ' + url)); return; }
+    const req = https.get(url, { headers: { 'User-Agent': 'dsfr-markdown-preview', Accept: json ? 'application/vnd.github+json' : 'application/octet-stream' }, timeout }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && redirects > 0) {
+        res.resume();
+        resolve(httpsGet(new URL(res.headers.location, url).toString(), { file, json, redirects: redirects - 1, timeout }));
+        return;
+      }
+      if (res.statusCode !== 200) { res.resume(); reject(new Error('GitHub a répondu ' + res.statusCode)); return; }
+      if (file) {
+        const out = fs.createWriteStream(file);
+        res.pipe(out);
+        out.on('finish', () => out.close(() => resolve(file)));
+        out.on('error', reject);
+        return;
+      }
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => {
+        try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8'))); } catch (e) { reject(e); }
+      });
+    });
+    req.on('timeout', () => req.destroy(new Error('GitHub ne répond pas')));
+    req.on('error', reject);
+  });
+}
+
+/**
+ * Regarde la dernière Release du dépôt ; si son .vsix est plus récent, propose de l'installer.
+ * Automatique (au plus une fois par jour, silencieux en cas d'erreur réseau) ou demandé par la commande
+ * « Rechercher une mise à jour » (toujours, avec un message dans tous les cas).
+ */
+async function checkForUpdate(context, manual) {
+  const now = Date.now();
+  if (!manual && !update.shouldCheck(context.globalState.get('dsfr.update.lastCheck'), now)) return;
+  const current = context.extension && context.extension.packageJSON ? context.extension.packageJSON.version : require('./package.json').version;
+  let info;
+  try {
+    const release = await httpsGet(update.LATEST_URL, { json: true });
+    info = update.releaseInfo(release);
+    await context.globalState.update('dsfr.update.lastCheck', now);
+  } catch (e) {
+    if (manual) vscode.window.showWarningMessage('Impossible de joindre GitHub pour chercher une mise à jour (réseau ou proxy). ' + (e && e.message ? e.message : ''));
+    return;
+  }
+  if (!info || !update.isNewer(info.version, current)) {
+    if (manual) vscode.window.showInformationMessage('Aperçu DSFR est à jour (version ' + current + ').');
+    return;
+  }
+  if (!manual && context.globalState.get('dsfr.update.skip') === info.version) return;
+  const INSTALL = 'Mettre à jour';
+  const NEWS = 'Voir les nouveautés';
+  const SKIP = 'Ignorer cette version';
+  const answer = await vscode.window.showInformationMessage(
+    'Une nouvelle version de l\'Aperçu DSFR est disponible : ' + info.version + ' (vous avez la ' + current + ').',
+    INSTALL, NEWS, SKIP);
+  if (answer === NEWS) { vscode.env.openExternal(vscode.Uri.parse(info.page)); return; }
+  if (answer === SKIP) { await context.globalState.update('dsfr.update.skip', info.version); return; }
+  if (answer !== INSTALL) return;
+  const target = path.join(require('os').tmpdir(), info.name);
+  try {
+    await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'Téléchargement de l\'Aperçu DSFR ' + info.version + '…' }, async () => {
+      await httpsGet(info.url, { file: target, timeout: 60000 });
+      await vscode.commands.executeCommand('workbench.extensions.installExtension', vscode.Uri.file(target));
+    });
+  } catch (e) {
+    const PAGE = 'Ouvrir la page de la version';
+    const a = await vscode.window.showErrorMessage('La mise à jour n\'a pas pu être installée : ' + (e && e.message ? e.message : e) + '. Vous pouvez télécharger le .vsix sur GitHub et l\'installer à la main.', PAGE);
+    if (a === PAGE) vscode.env.openExternal(vscode.Uri.parse(info.page));
+    return;
+  }
+  const RELOAD = 'Recharger VS Code';
+  const done = await vscode.window.showInformationMessage('Aperçu DSFR ' + info.version + ' est installé. Rechargez VS Code pour l\'utiliser.', RELOAD);
+  if (done === RELOAD) vscode.commands.executeCommand('workbench.action.reloadWindow');
+}
+
 // Commande « Activer / désactiver l'aperçu DSFR » (aussi déclenchée par l'indicateur).
 async function toggle() {
   const on = isEnabled();
@@ -1038,6 +1148,7 @@ function activate(context) {
     vscode.window.registerWebviewViewProvider('dsfrPreview.components', createComponentPanel(context)),
     vscode.commands.registerCommand('dsfrPreview.showComponents', () => vscode.commands.executeCommand('dsfrPreview.components.focus')),
     vscode.commands.registerCommand('dsfrPreview.newVersion', newVersion),
+    vscode.commands.registerCommand('dsfrPreview.checkUpdates', () => checkForUpdate(context, true)),
     vscode.commands.registerCommand('dsfrPreview.pastePlainFromWord', pastePlainFromWord),
     vscode.commands.registerCommand('dsfrPreview.checkWorkspace', checkWorkspace),
     vscode.commands.registerCommand('dsfrPreview.format.bold', () => formatInline('bold')),
@@ -1083,6 +1194,11 @@ function activate(context) {
   maybeAutoOpen(vscode.window.activeTextEditor);
   updateStatus();
   lintOpenDocuments();
+  // Mise à jour depuis GitHub : quelques secondes après l'ouverture, sans ralentir le démarrage
+  if (config().checkUpdates && context.extensionMode !== vscode.ExtensionMode.Development && context.extensionMode !== vscode.ExtensionMode.Test) {
+    const timer = setTimeout(() => checkForUpdate(context, false).catch(() => {}), 8000);
+    context.subscriptions.push({ dispose: () => clearTimeout(timer) });
+  }
 
   // API lue par l'extension Markdown de VS Code. Les options sont des fonctions :
   // les réglages sont relus à chaque rendu, sans recharger la fenêtre.
