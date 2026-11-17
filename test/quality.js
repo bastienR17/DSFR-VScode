@@ -114,4 +114,20 @@ issues = checkQuality([
 assert.deepStrictEqual(issues.map((i) => [i.severity, i.range.line, i.range.start, i.range.end]), [['warning', 0, 15, 55], ['warning', 2, 5, 45]]);
 assert(/écrivez son nom juste après « fichiers\/ »/.test(issues[0].message));
 
-console.log('Conseils : images sans description, liens absolus vers le site ; liens mal formés, astérisques échappés, titres coupés, noms d\'image à compléter OK');
+// target laissé à sa valeur d'exemple (snippets des cartes, tuiles, boutons, tags) : lien à compléter, avec
+// ce qu'il faut y mettre ; rien quand l'adresse est écrite, rien dans un bloc de code
+issues = checkQuality(['/// card | Titre', '    target: lien-vers-la-page', '///', '/// button | B', '    target: https://', '///',
+  '/// card | F', '    target: https://docsirh.e2.rie.gouv.fr/fichiers/Dossier/fichier.xls', '///', '/// tile | Ok', '    target: Gestion-des-promotions', '///',
+  '```', '/// card | x', '    target: page.md', '```', 'target: lien-vers-la-page'].join('\n'), {}).filter((i) => i.code === 'dsfr-target-todo');
+assert.deepStrictEqual(issues.map((i) => [i.severity, i.range.line, i.range.start, i.range.end]), [['warning', 1, 12, 29], ['warning', 4, 12, 20], ['warning', 7, 12, 71]]);
+assert(/clique sur la carte\. Remplacez « lien-vers-la-page » par le nom d'une page du site/.test(issues[0].message));
+assert(/clique sur le bouton/.test(issues[1].message) && /répertoire des fichiers/.test(issues[2].message));
+// Les snippets des cartes, tuiles et tags proposent « lien-vers-la-page », signalé tant qu'il n'est pas remplacé
+const snippets = require('../snippets/dsfr.json');
+for (const [name, s] of Object.entries(snippets)) {
+  const body = [].concat(s.body).join('\n');
+  for (const m of body.matchAll(/target: \$\{\d+:([^}]*)\}/g)) assert(/^(lien-vers-la-page|https:\/\/)$/.test(m[1]), name + ' : ' + m[1]);
+}
+assert(!Object.values(snippets).some((s) => [].concat(s.prefix).includes('dsfr-sirh-rubrique')), 'page de rubrique retirée');
+
+console.log('Conseils : images sans description, liens absolus vers le site ; liens mal formés, astérisques échappés, titres coupés, noms d\'image et liens « target » à compléter OK');

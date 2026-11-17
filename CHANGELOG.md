@@ -2,6 +2,27 @@
 
 Format inspiré de [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
+## 0.15.0 — novembre 2026
+
+### Ajouts
+- **Images cassées signalées** : les images en ligne de la page (`![…](https://docsirh…/fichiers/x.png)`,
+  `<img src="…">`, `image:` des blocs) sont vérifiées sur le serveur. Une image introuvable (erreur 404) ou une
+  adresse qui mène à une page web au lieu d'une image est soulignée : « Image cassée ». Seul l'en-tête est demandé
+  (pas l'image entière) ; une réponse est gardée 10 minutes. Hors du réseau du ministère, quand le serveur ne
+  répond pas, rien n'est signalé. Réglage `dsfrPreview.checkRemoteImages`.
+- **Lien des cartes à compléter** : dans les cartes, tuiles, boutons et tags insérés par l'extension, `target` vaut
+  `lien-vers-la-page` (ou `https://`) et reste souligné tant qu'il n'est pas remplacé. Le message explique quoi y
+  mettre : le nom d'une page du site, le chemin d'un fichier `.md` ou une adresse complète.
+
+### Corrections
+- **Gras raté signalé dans tous les cas** : « **test ** » ou « ** test** » (espace collée aux `**`, sans lettre
+  juste après) s'affiche avec ses étoiles sur le site, dans toutes les versions, mais n'était pas signalé (seul
+  « **test **suite » l'était). Nouvelle alerte « Gras raté », avec la correction par l'ampoule 💡.
+
+### Retraits
+- Composant « Page de rubrique (cartes) » (`dsfr-sirh-rubrique`) retiré de la boîte à composants et des
+  raccourcis. Les autres cartes Doc SIRH (`dsfr-sirh-cartes-3`, `dsfr-sirh-carte`…) restent.
+
 ## 0.14.2 — novembre 2026
 
 ### Modifications

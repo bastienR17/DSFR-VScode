@@ -49,7 +49,7 @@ Extension créée par **Bastien** ([@bastienR17](https://github.com/bastienR17))
   une flèche dans la marge replie un bloc (onglets, accordéon, grille…) jusqu'à son `///`.
 - **Aperçu à côté du Markdown** en un clic, ou dans une fenêtre séparée à placer sur un second écran.
   L'aperçu suit la page ouverte : changer d'onglet affiche l'autre page, avec ses accordéons tels qu'on les a laissés.
-- **42 snippets**, dont 13 propres à Doc SIRH, pour insérer les composants sans retenir leur syntaxe, et un
+- **41 snippets**, dont 12 propres à Doc SIRH, pour insérer les composants sans retenir leur syntaxe, et un
   bouton **＋ Insérer un composant** qui les présente rangés par familles, avec une phrase d'explication.
 - **Une boîte à composants** dans la barre de gauche (icône **DSFR**) : chaque composant avec une miniature de son
   rendu, une recherche, et un clic pour l'insérer dans la page.
@@ -189,7 +189,6 @@ Les blocs tels que l'équipe DSNUMRH4 les écrit dans Doc SIRH. Taper `dsfr-sirh
 | Raccourci | Insère |
 |---|---|
 | `dsfr-sirh-modop` | Page de mode opératoire complète : titre, fil d'Ariane, suivi des modifications, documents de référence, contexte |
-| `dsfr-sirh-rubrique` | Page de rubrique : fil d'Ariane, titre et une ligne de 3 cartes vers les modes opératoires |
 | `dsfr-sirh-fil-ariane` | Fil d'Ariane en HTML (Accueil, rubrique, sous-rubrique, page courante) |
 | `dsfr-sirh-fil-ariane-niveau` | Un niveau de plus dans le fil d'Ariane |
 | `dsfr-sirh-suivi` | Accordéon « Suivi des modifications » avec son tableau |
@@ -286,6 +285,7 @@ le mieux est de corriger aussi ce script pour qu'il mette les valeurs entre guil
 | `dsfrPreview.showErrors` | `true`, `false` | `true` | Afficher les encadrés d'erreur dans l'aperçu et souligner les problèmes dans l'éditeur |
 | `dsfrPreview.checkLinks` | `true`, `false` | `true` | Souligner les liens, images et ancres introuvables, et les syntaxes non activées dans le `mkdocs.yml` |
 | `dsfrPreview.checkImageAlt` | `true`, `false` | `false` | Signaler les images sans description (conseil d'accessibilité, coupé par défaut) |
+| `dsfrPreview.checkRemoteImages` | `true`, `false` | `true` | Vérifier sur le serveur les images en ligne (`https://docsirh…/fichiers/…`) et signaler les images cassées (introuvables, ou adresse qui ne mène pas à une image) |
 | `dsfrPreview.checkAbsoluteLinks` | `true`, `false` | `false` | Signaler les liens complets vers une page du site, en proposant le lien vers le `.md` (conseil coupé par défaut) |
 | `dsfrPreview.siteUrl` | adresse | `https://docsirh.e2.rie.gouv.fr` | Adresse du site, pour `checkAbsoluteLinks` (le `site_url` du `mkdocs.yml` est prioritaire ; réglage vide : pas de vérification) |
 | `dsfrPreview.mkdocsCompat` | `true`, `false` | `true` | Reproduire les règles Markdown du site |

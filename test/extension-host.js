@@ -730,6 +730,39 @@ async function lintVia(document) {
   assert.strictEqual(ed.text, 'Premier.\n\n- Un\n- Deux');
   vscode.window.activeTextEditor = null;
 
+  // Images en ligne cassées : le serveur est interrogé (en-tête seulement), puis la page est revérifiée
+  {
+    const http = require('http');
+    const was = { enabled: settings.enabled, showErrors: settings.showErrors };
+    settings.enabled = true; settings.showErrors = true;
+    const seenMethods = [];
+    const server = http.createServer((req, res) => {
+      seenMethods.push(req.method + ' ' + req.url + (req.headers.range ? ' ' + req.headers.range : ''));
+      if (req.url === '/fichiers/sans-head.png') { res.writeHead(req.method === 'HEAD' ? 405 : 404); res.end(); return; }
+      if (req.url === '/fichiers/ok.png') { res.writeHead(200, { 'Content-Type': 'image/png' }); res.end(); return; }
+      if (req.url === '/fichiers/page.png') { res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); res.end(); return; }
+      if (req.url === '/fichiers/ancien.png') { res.writeHead(301, { Location: '/fichiers/ok.png' }); res.end(); return; }
+      res.writeHead(404); res.end();
+    });
+    await new Promise((r) => server.listen(0, '127.0.0.1', r));
+    const base = 'http://127.0.0.1:' + server.address().port + '/fichiers/';
+    const imgDoc = textDocument(new Uri(path.join(tmp, 'images-en-ligne.md')),
+      '# Images\n\n![Bonne](' + base + 'ok.png)\n\n![Absente](' + base + 'absente.png)\n\n<img\n  src="' + base + 'page.png"\n  alt="x">\n\n![Déplacée](' + base + 'ancien.png)\n\n![Serveur sans HEAD](' + base + 'sans-head.png)\n');
+    const first = (await lintVia(imgDoc)).filter((d) => d.code === 'dsfr-image-broken');
+    assert.strictEqual(first.length, 0, 'réponse du serveur pas encore connue');
+    for (let i = 0; i < 50 && seenMethods.length < 7; i++) await new Promise((r) => setTimeout(r, 20));
+    await new Promise((r) => setTimeout(r, 50));
+    const broken = (await lintVia(imgDoc)).filter((d) => d.code === 'dsfr-image-broken');
+    assert.deepStrictEqual(broken.map((d) => [d.range.sl, d.severity]), [[4, 1], [7, 1], [12, 1]], 'image absente (404), page web au lieu d\'une image, serveur sans HEAD');
+    assert(seenMethods.filter((m) => !m.startsWith('HEAD')).every((m) => m === 'GET /fichiers/sans-head.png bytes=0-0'), 'en-tête seulement, sinon un octet : ' + seenMethods);
+    // Réglage coupé : rien
+    settings.checkRemoteImages = false;
+    assert.strictEqual((await lintVia(imgDoc)).filter((d) => d.code === 'dsfr-image-broken').length, 0);
+    delete settings.checkRemoteImages;
+    Object.assign(settings, was);
+    server.close();
+  }
+
   // Mise à jour depuis GitHub (commande « Rechercher une mise à jour ») : Release plus récente, téléchargement
   // (avec redirection vers les serveurs de fichiers de GitHub), installation, rechargement
   const current = require('../package.json').version;
@@ -789,5 +822,5 @@ async function lintVia(document) {
   assert.deepStrictEqual(saved.sort(), ['a.md', 'b.md']);
   fs.rmSync(tmp, { recursive: true, force: true });
 
-  console.log('Extension (VS Code simulé) : rendu, bascule, aperçu à côté, nouvelle fenêtre, blocs, en-têtes et liens soulignés, corrections à la demande, liste des problèmes, panneau des composants, mise à jour depuis GitHub, vérification du dossier, mise en forme, nouvelle version, collage depuis Word, autocomplétion et survol OK');
+  console.log('Extension (VS Code simulé) : rendu, bascule, aperçu à côté, nouvelle fenêtre, blocs, en-têtes et liens soulignés, corrections à la demande, liste des problèmes, panneau des composants, images en ligne cassées, mise à jour depuis GitHub, vérification du dossier, mise en forme, nouvelle version, collage depuis Word, autocomplétion et survol OK');
 })().catch((e) => { console.error(e); process.exit(1); });

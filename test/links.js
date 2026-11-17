@@ -84,5 +84,22 @@ issues = checkExtensions(page, { extensions: new Set(['admonition']) });
 assert(issues[0].message.includes('dsfr_structure') && issues[0].range.line === 4);
 assert.deepStrictEqual(checkExtensions(page, { extensions: new Set(['dsfr_structure.extension.all_extensions', 'admonition', 'pymdownx.details', 'attr_list', 'def_list']) }), []);
 
+// Images en ligne cassées : d'après la réponse du serveur (ctx.remote), Markdown, <img src> sur plusieurs lignes,
+// options des blocs ; rien sans réponse connue, rien dans le code, adresse sans nom de fichier laissée à part
+{
+  const { remoteImages } = require('../lib/links');
+  const F = 'https://docsirh.e2.rie.gouv.fr/fichiers/';
+  const page = ['![a](' + F + 'ok.png)', '![b](' + F + 'absente.png)', '<img', '  src="' + F + 'page.png"', '  alt="x">', '![c](' + F + ')',
+    '`![d](' + F + 'code.png)`', '```', '![e](' + F + 'bloc-code.png)', '```', '/// figure | T', '    image: ' + F + 'bloc.png', '///'].join('\n');
+  assert.deepStrictEqual(remoteImages(page).sort(), [F + 'absente.png', F + 'bloc.png', F + 'ok.png', F + 'page.png']);
+  const answers = { [F + 'absente.png']: { broken: true, status: 404 }, [F + 'page.png']: { notImage: true, type: 'une page web (text/html)' }, [F + 'bloc.png']: { broken: true, status: 410 } };
+  const found = checkLinks(page, { file: '/p.md', exists: () => true, read: () => null, remote: (u) => answers[u] || null });
+  assert.deepStrictEqual(found.map((i) => [i.code, i.range.line, i.range.start, i.range.end]),
+    [['dsfr-image-broken', 1, 5, 56], ['dsfr-image-broken', 3, 7, 55], ['dsfr-image-broken', 11, 11, 59]]);
+  assert(/Image cassée : le serveur répond « introuvable » \(erreur 404\)/.test(found[0].message));
+  assert(/ne mène pas à une image \(le serveur renvoie une page web/.test(found[1].message));
+  assert.deepStrictEqual(checkLinks(page, { file: '/p.md', exists: () => true, read: () => null }).filter((i) => i.code === 'dsfr-image-broken'), [], 'sans vérification en ligne');
+}
+
 fs.rmSync(root, { recursive: true, force: true });
-console.log('Liens, images, ancres et mkdocs.yml : OK');
+console.log('Liens, images (y compris en ligne cassées), ancres et mkdocs.yml : OK');

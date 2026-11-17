@@ -199,7 +199,20 @@ assert.strictEqual(issue.code, 'dsfr-loose-strong');
 assert.strictEqual(word(src, issue), '**limites **');
 assert.strictEqual(fixed(src, issue), 'Il a des **limites** à garder, et du **gras** normal.\n');
 clean(fixed(src, issue));
-clean('Un ** espace ** autour : non signalé.\n');
+// Espace collée aux « ** » sans lettre juste après : étoiles affichées dans toutes les versions (cas réel : « **test ** »)
+for (const [text, want, out] of [
+  ['**test **\n', '**test **', '**test**\n'],
+  ['Texte **test ** suite\n', '**test **', 'Texte **test** suite\n'],
+  ['Un ** espace ** autour\n', '** espace **', 'Un **espace** autour\n'],
+  ['Voir ** test** ici\n', '** test**', 'Voir **test** ici\n'],
+]) {
+  issue = only(text);
+  assert.strictEqual(issue.code, 'dsfr-loose-strong', text);
+  assert.strictEqual(word(text, issue), want);
+  assert(/^Gras raté : « .* » s'affiche avec ses étoiles sur le site/.test(issue.message), issue.message);
+  assert.strictEqual(fixed(text, issue), out);
+  clean(out);
+}
 // Gras appariés dans l'ordre (cas réel Doc SIRH) : pas de faux signalement
 clean('**G**estion de l’**A**rchivage et du stockage **U**nifiés du\n**D**ossier **I**ndividuel agent\n');
 clean('Du `**code **x` en ligne : ignoré.\n');

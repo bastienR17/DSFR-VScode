@@ -51,6 +51,7 @@ function config() {
     mkdocsCompat: c.get('mkdocsCompat', true),
     openMode: c.get('openMode', 'side'),
     checkLinks: c.get('checkLinks', true),
+    checkRemoteImages: c.get('checkRemoteImages', true),
     checkImageAlt: c.get('checkImageAlt', false),
     checkAbsoluteLinks: c.get('checkAbsoluteLinks', false),
     siteUrl: c.get('siteUrl', 'https://docsirh.e2.rie.gouv.fr'),
@@ -285,9 +286,82 @@ function siteDiagnostics(document, text) {
     if (open) return open.getText();
     try { return fs.readFileSync(p, 'utf8'); } catch (e) { return null; }
   };
-  const issues = checkLinks(text, { file, docsDir: inSite ? site.docsDir : null, exists: (p) => fs.existsSync(p), read });
+  const remote = config().checkRemoteImages ? remoteImageStatus : undefined;
+  const issues = checkLinks(text, { file, docsDir: inSite ? site.docsDir : null, exists: (p) => fs.existsSync(p), read, remote });
   if (inSite) issues.push(...mkdocsConfig.checkExtensions(text, site));
   return issues.map(toDiagnostic);
+}
+
+/* ------------------------------------------------------------------ */
+/* Images en ligne cassées (https://docsirh…/fichiers/x.png)           */
+/* ------------------------------------------------------------------ */
+
+// Réponse du serveur pour chaque image : { at, result } ; result null = bonne, inconnue (serveur injoignable,
+// hors du réseau du ministère…) ou en cours de vérification
+const remoteCache = new Map();
+const REMOTE_TTL = 10 * 60 * 1000; // une image corrigée sur le serveur est revue au bout de 10 minutes
+const REMOTE_TTL_UNKNOWN = 2 * 60 * 1000;
+const remoteQueue = [];
+let remoteRunning = 0;
+
+/** Réponse connue pour cette image ({broken, status} / {notImage, type}), ou null ; lance la vérification si besoin. */
+function remoteImageStatus(url) {
+  const e = remoteCache.get(url);
+  const now = Date.now();
+  if (e && (e.pending || now - e.at < (e.result ? REMOTE_TTL : REMOTE_TTL_UNKNOWN))) return e.result;
+  remoteCache.set(url, { pending: true, at: now, result: e ? e.result : null });
+  remoteQueue.push(url);
+  pumpRemote();
+  return e ? e.result : null;
+}
+
+function pumpRemote() {
+  while (remoteRunning < 4 && remoteQueue.length) {
+    const url = remoteQueue.shift();
+    remoteRunning++;
+    probeImage(url).then((result) => {
+      const before = remoteCache.get(url);
+      remoteCache.set(url, { at: Date.now(), result });
+      const changed = JSON.stringify(before && before.result) !== JSON.stringify(result);
+      if (changed) {
+        // Les pages ouvertes qui contiennent cette image sont revérifiées
+        for (const doc of vscode.workspace.textDocuments) if (doc.languageId === 'markdown' && doc.getText().includes(url)) lintDocument(doc);
+      }
+    }).finally(() => { remoteRunning--; pumpRemote(); });
+  }
+}
+
+/**
+ * Demande l'image au serveur (en-tête seulement ; le proxy réglé dans VS Code s'applique).
+ * 404 / 410 : introuvable ; 200 avec une page web au lieu d'une image : pas une image ; tout le reste
+ * (accès refusé, serveur injoignable, délai dépassé) : null, rien n'est signalé.
+ */
+function probeImage(url, redirects = 3, method = 'HEAD') {
+  return new Promise((resolve) => {
+    let mod;
+    try { mod = require(url.startsWith('https:') ? 'https' : 'http'); } catch (e) { resolve(null); return; }
+    let req;
+    try {
+      const headers = { 'User-Agent': 'dsfr-markdown-preview' };
+      if (method === 'GET') headers.Range = 'bytes=0-0'; // repli quand le serveur refuse HEAD : un seul octet
+      req = mod.request(url, { method, timeout: 6000, headers }, (res) => {
+        res.resume();
+        const status = res.statusCode;
+        if (status >= 300 && status < 400 && res.headers.location && redirects > 0) {
+          resolve(probeImage(new URL(res.headers.location, url).toString(), redirects - 1, method));
+          return;
+        }
+        if ((status === 405 || status === 501) && method === 'HEAD') { resolve(probeImage(url, redirects, 'GET')); return; }
+        if (status === 404 || status === 410) { resolve({ broken: true, status }); return; }
+        const type = String(res.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
+        if ((status === 200 || status === 206) && /^text\/html/.test(type)) { resolve({ notImage: true, type: 'une page web (' + type + ')' }); return; }
+        resolve(null);
+      });
+    } catch (e) { resolve(null); return; }
+    req.on('timeout', () => req.destroy());
+    req.on('error', () => resolve(null));
+    req.end();
+  });
 }
 
 /**
